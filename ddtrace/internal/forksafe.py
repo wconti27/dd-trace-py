@@ -149,7 +149,7 @@ def Lock():
     if asbool(os.environ.get("DD_GEVENT_PATCH_ALL", "false")):
         import gevent
 
-        return ResetObject(gevent.BoundedSemaphore)
+        return ResetObject(gevent.lock.BoundedSemaphore)
     return ResetObject(threading.Lock)
 
 
@@ -158,7 +158,7 @@ def RLock():
     if asbool(os.environ.get("DD_GEVENT_PATCH_ALL", "false")):
         import gevent
 
-        return ResetObject(gevent.RLock)
+        return ResetObject(gevent.lock.RLock)
     return ResetObject(threading.RLock)
 
 
