@@ -146,11 +146,19 @@ class ResetObject(wrapt.ObjectProxy, typing.Generic[_T]):
 
 def Lock():
     # type: (...) -> ResetObject[threading.Lock]
+    if asbool(os.environ.get("DD_GEVENT_PATCH_ALL", "false")):
+        import gevent
+
+        return ResetObject(gevent.BoundedSemaphore)
     return ResetObject(threading.Lock)
 
 
 def RLock():
     # type: (...) -> ResetObject[threading.RLock]
+    if asbool(os.environ.get("DD_GEVENT_PATCH_ALL", "false")):
+        import gevent
+
+        return ResetObject(gevent.RLock)
     return ResetObject(threading.RLock)
 
 
