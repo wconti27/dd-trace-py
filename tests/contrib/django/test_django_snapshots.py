@@ -227,6 +227,7 @@ def test_asgi_500():
         "meta.http.useragent",
         "metrics._dd.appsec.waf.duration",
         "metrics._dd.appsec.waf.duration_ext",
+        "_dd.appsec.event_rules.loaded",
     ]
 )
 def test_appsec_enabled():
@@ -244,6 +245,7 @@ def test_appsec_enabled():
         "meta.http.useragent",
         "metrics._dd.appsec.waf.duration",
         "metrics._dd.appsec.waf.duration_ext",
+        "_dd.appsec.event_rules.loaded",
     ]
 )
 def test_appsec_enabled_attack():
