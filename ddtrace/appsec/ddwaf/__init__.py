@@ -151,17 +151,19 @@ if _DDWAF_LOADED:
             error = ddwaf_run(ctx.ctx, wrapper, ctypes.byref(result), timeout_ms * 1000)
             if error < 0:
                 LOGGER.warning("run DDWAF error: %d\ninput %s\nerror %s", error, wrapper.struct, self.info.errors)
-            return DDWaf_result(
+            res = DDWaf_result(
                 result.data.decode("UTF-8", errors="ignore") if hasattr(result, "data") and result.data else None,
                 [result.actions.array[i].decode("UTF-8", errors="ignore") for i in range(result.actions.size)],
                 result.total_runtime / 1e3,
                 (time.time() - start) * 1e6,
             )
+            if not res.actions:
+                LOGGER.error("WAF EMPTY ACTIONS")
+            return res
 
     def version():
         # type: () -> text_type
         return ddwaf_get_version().decode("UTF-8")
-
 
 else:
     # Mockup of the DDWaf class doing nothing
