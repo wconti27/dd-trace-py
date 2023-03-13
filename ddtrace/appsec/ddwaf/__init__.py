@@ -157,8 +157,8 @@ if _DDWAF_LOADED:
                 result.total_runtime / 1e3,
                 (time.time() - start) * 1e6,
             )
-            if not res.actions:
-                LOGGER.error("WAF EMPTY ACTIONS")
+            if res.data and not res.actions:
+                LOGGER.error("AWQDDOP WAF EMPTY ACTIONS ONLY MONITORING: %s", res.data)
             return res
 
     def version():
