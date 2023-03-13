@@ -153,6 +153,8 @@ if _DDWAF_LOADED:
                 LOGGER.warning(
                     "AWQDDOP run DDWAF error: %d\ninput %s\nerror %s", error, wrapper.struct, self.info.errors
                 )
+            if result.timeout:
+                LOGGER.warning("AWQDDOP run DDWAF timeout: %d", error)
             res = DDWaf_result(
                 result.data.decode("UTF-8", errors="ignore") if hasattr(result, "data") and result.data else None,
                 [result.actions.array[i].decode("UTF-8", errors="ignore") for i in range(result.actions.size)],
