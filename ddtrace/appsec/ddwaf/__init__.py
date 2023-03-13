@@ -150,7 +150,9 @@ if _DDWAF_LOADED:
             wrapper = ddwaf_object(data)
             error = ddwaf_run(ctx.ctx, wrapper, ctypes.byref(result), timeout_ms * 1000)
             if error < 0:
-                LOGGER.warning("run DDWAF error: %d\ninput %s\nerror %s", error, wrapper.struct, self.info.errors)
+                LOGGER.warning(
+                    "AWQDDOP run DDWAF error: %d\ninput %s\nerror %s", error, wrapper.struct, self.info.errors
+                )
             res = DDWaf_result(
                 result.data.decode("UTF-8", errors="ignore") if hasattr(result, "data") and result.data else None,
                 [result.actions.array[i].decode("UTF-8", errors="ignore") for i in range(result.actions.size)],
