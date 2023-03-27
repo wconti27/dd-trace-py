@@ -146,12 +146,7 @@ class _FlaskWSGIMiddleware(_DDWSGIMiddlewareBase):
             _asm_request_context.call_waf_callback()
             if _context.get_item("http.request.blocked", span=req_span):
                 # response code must be set here, or it will be too late
-                ctype = (
-                    "text/html"
-                    if "text/html" in _asm_request_context.get_headers().get("Accept", "").lower()
-                    else "text/json"
-                )
-                response_headers = [("content-type", ctype)]
+                response_headers = [("content-type", _asm_request_context.get_response_content_type())]
                 result = start_response("403 FORBIDDEN", response_headers)
                 trace_utils.set_http_meta(req_span, config.flask, status_code="403", response_headers=response_headers)
             else:
@@ -631,10 +626,9 @@ def _set_block_tags(span):
 
 
 def _block_request_callable(span):
-    request = flask.request
     _context.set_item("http.request.blocked", True, span=span)
     _set_block_tags(span)
-    ctype = "text/html" if "text/html" in request.headers.get("Accept", "").lower() else "text/json"
+    ctype = _asm_request_context.get_response_content_type()
     abort(flask.Response(utils._get_blocked_template(ctype), content_type=ctype, status=403))
 
 

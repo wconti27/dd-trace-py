@@ -7,11 +7,11 @@ import pytest
 from six import ensure_binary
 
 from ddtrace.appsec import _asm_request_context
+from ddtrace.appsec._asm_request_context import _transform_headers
 from ddtrace.appsec._constants import APPSEC
 from ddtrace.appsec._constants import DEFAULT
 from ddtrace.appsec.ddwaf import DDWaf
 from ddtrace.appsec.processor import AppSecSpanProcessor
-from ddtrace.appsec.processor import _transform_headers
 from ddtrace.constants import USER_KEEP
 from ddtrace.contrib.trace_utils import set_http_meta
 from ddtrace.ext import SpanTypes

@@ -35,6 +35,16 @@ class Constant_Class(type):
         # type: ("Constant_Class", str) -> Any
         return self.__dict__[k]
 
+    def __new__(cls, name, bases, dictionary):
+        # self.__reverse_dict = {value: key for key, value in self}
+        dictionary["_Constant_Class__reverse_dict"] = {
+            value: key for key, value in dictionary.items() if not key.startswith("_")
+        }
+        return super(Constant_Class, cls).__new__(cls, name, bases, dictionary)
+
+    def get_name_from_value(self, value):
+        return self.__reverse_dict.get(value)
+
 
 @six.add_metaclass(Constant_Class)  # required for python2/3 compatibility
 class APPSEC(object):

@@ -52,6 +52,15 @@ class DDWaf_result(object):
         self.total_runtime = total_runtime
         self.timeout = timeout
 
+    def __repr__(self):
+        return "data %s, actions %s, runtime %f, total_runtime %f, timeout %s" % (
+            self.data,
+            self.actions,
+            self.runtime,
+            self.total_runtime,
+            self.timeout,
+        )
+
 
 class DDWaf_info(object):
     __slots__ = ["loaded", "failed", "errors", "version"]
