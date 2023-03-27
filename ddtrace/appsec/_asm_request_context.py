@@ -98,6 +98,8 @@ def get_response_content_type():
 def set_waf_callback(callback, span, required_adresses):  # type: (Any, Any, Iterable[str]|None) -> None
     _DD_WAF_CALLBACK.set((callback, span))
     current_directory = _DD_WAF_DATA.get()
+    if current_directory is None:
+        current_directory = {}
     if required_adresses is not None:
         _DD_WAF_DATA.set({key: current_directory.get(key, None) for key in required_adresses})
 
