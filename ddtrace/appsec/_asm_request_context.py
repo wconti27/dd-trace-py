@@ -95,10 +95,11 @@ def get_response_content_type():
     return _DD_RESPONSE_CONTENT_TYPE.get()
 
 
-def set_waf_callback(callback, span, required_adresses):  # type: (Any, Any, Iterable[str]) -> None
+def set_waf_callback(callback, span, required_adresses):  # type: (Any, Any, Iterable[str]|None) -> None
     _DD_WAF_CALLBACK.set((callback, span))
     current_directory = _DD_WAF_DATA.get()
-    _DD_WAF_DATA.set({key: current_directory.get(key, None) for key in required_adresses})
+    if required_adresses is not None:
+        _DD_WAF_DATA.set({key: current_directory.get(key, None) for key in required_adresses})
 
 
 def is_address_needed(name):  # type: (str) -> bool
@@ -161,11 +162,11 @@ def call_waf_callback(custom_data=None):
 def asm_request_context_set(remote_ip=None, headers=None, headers_case_sensitive=False, block_request_callable=None):
     # type: (Optional[str], Any, bool, Optional[Callable]) -> None
     _DD_WAF_DATA.set({})
+    set_waf_callback(None, None, None)
     set_address("REQUEST_HEADERS_NO_COOKIES", headers)
     set_address("REQUEST_HEADERS_NO_COOKIES_CASE", headers_case_sensitive)
     set_address("REQUEST_HTTP_IP", remote_ip)
     set_block_request_callable(block_request_callable)
-    set_waf_callback(None, None, {})
 
 
 def set_waf_results(result_data, result_info, is_blocked):  # type: (Any, Any, bool) -> None
