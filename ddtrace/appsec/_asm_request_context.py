@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from typing import Iterable
 
 from ddtrace.appsec._constants import SPAN_DATA_NAMES
+from ddtrace.contrib import trace_utils
 from ddtrace.internal import _context
 from ddtrace.vendor import contextvars
 
@@ -167,6 +168,9 @@ def asm_request_context_set(remote_ip=None, headers=None, headers_case_sensitive
     set_waf_callback(None, None, None)
     set_address("REQUEST_HEADERS_NO_COOKIES", headers)
     set_address("REQUEST_HEADERS_NO_COOKIES_CASE", headers_case_sensitive)
+    if headers is not None and remote_ip is not None:
+        remote_ip = trace_utils._get_request_header_client_ip(headers, remote_ip, headers_case_sensitive)
+
     set_address("REQUEST_HTTP_IP", remote_ip)
     set_block_request_callable(block_request_callable)
 
