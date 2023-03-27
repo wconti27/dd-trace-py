@@ -19,6 +19,7 @@ from typing import cast
 
 from ddtrace import Pin
 from ddtrace import config
+from ddtrace.appsec import _asm_request_context
 from ddtrace.ext import http
 from ddtrace.ext import user
 from ddtrace.internal import _context
@@ -510,26 +511,20 @@ def set_http_meta(
     if config._appsec_enabled:
         status_code = str(status_code) if status_code is not None else None
 
-        _context.set_items(
-            {
-                k: v
-                for k, v in [
-                    ("http.request.uri", raw_uri),
-                    ("http.request.method", method),
-                    ("http.request.cookies", request_cookies),
-                    ("http.request.query", parsed_query),
-                    ("http.request.headers", request_headers),
-                    ("http.response.headers", response_headers),
-                    ("http.response.status", status_code),
-                    ("http.request.path_params", request_path_params),
-                    ("http.request.body", request_body),
-                    ("http.request.remote_ip", request_ip),
-                ]
-                if v is not None
-            },
-            span=span,
-        )
-
+        for k, v in [
+            ("REQUEST_BODY", request_body),
+            ("REQUEST_QUERY", parsed_query),
+            ("REQUEST_HEADERS_NO_COOKIES", request_headers),
+            ("REQUEST_URI_RAW", raw_uri),
+            ("REQUEST_METHOD", method),
+            ("REQUEST_PATH_PARAMS", request_path_params),
+            ("REQUEST_COOKIES", request_cookies),
+            ("REQUEST_HTTP_IP", request_ip),
+            ("RESPONSE_STATUS", status_code),
+            ("RESPONSE_HEADERS_NO_COOKIES", response_headers),
+        ]:
+            if v is not None:
+                _asm_request_context.set_address(k, v)
     if route is not None:
         span.set_tag_str(http.ROUTE, route)
 

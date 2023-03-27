@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from typing import Tuple
     from typing import Union
     from typing import Iterable
+    from ddtrace.span import Span
 
 from ddtrace.appsec._constants import SPAN_DATA_NAMES
 from ddtrace.contrib import trace_utils
@@ -21,6 +22,44 @@ from ddtrace.vendor import contextvars
 
 
 log = get_logger(__name__)
+
+_COLLECTED_REQUEST_HEADERS = {
+    "accept",
+    "accept-encoding",
+    "accept-language",
+    "cf-connecting-ip",
+    "cf-connecting-ipv6",
+    "content-encoding",
+    "content-language",
+    "content-length",
+    "content-type",
+    "fastly-client-ip",
+    "forwarded",
+    "forwarded-for",
+    "host",
+    "true-client-ip",
+    "user-agent",
+    "via",
+    "x-client-ip",
+    "x-cluster-client-ip",
+    "x-forwarded",
+    "x-forwarded-for",
+    "x-real-ip",
+}
+
+
+def _set_headers(span, headers, kind):
+    # type: (Span, Any, str) -> None
+    from ddtrace.contrib.trace_utils import _normalize_tag_name
+
+    for k in headers:
+        if isinstance(k, tuple):
+            key, value = k
+        else:
+            key, value = k, headers[k]
+        if key.lower() in _COLLECTED_REQUEST_HEADERS:
+            # since the header value can be a list, use `set_tag()` to ensure it is converted to a string
+            span.set_tag(_normalize_tag_name(kind, key), value)
 
 
 def _transform_headers(data):
@@ -55,6 +94,7 @@ thread will have a different context.
 _DD_RESPONSE_CONTENT_TYPE = contextvars.ContextVar("datadog_response_content_type", default="text/json")
 _DD_BLOCK_REQUEST_CALLABLE = contextvars.ContextVar("datadog_block_request_callable_contextvar", default=None)
 _DD_WAF_CALLBACK = contextvars.ContextVar("datadog_early_waf_callback", default=None)
+_DD_WAF_ROOTSPAN = contextvars.ContextVar("datadog_waf_root_span", default=None)
 _DD_WAF_DATA = contextvars.ContextVar("datadog_waf_data", default=None)
 _DD_WAF_DATA_SENT = contextvars.ContextVar("datadog_waf_data_sent", default=None)
 
@@ -99,10 +139,15 @@ def get_response_content_type():
 
 
 def set_waf_callback(callback, span, required_adresses):  # type: (Any, Any, Iterable[str]|None) -> None
-    _DD_WAF_CALLBACK.set((callback, span))
+    _DD_WAF_CALLBACK.set(callback)
+    _DD_WAF_ROOTSPAN.set(span)
     current_directory = _DD_WAF_DATA.get()
     if current_directory is None:
         current_directory = {}
+    headers_req = current_directory.get("REQUEST_HEADERS_NO_COOKIES")
+    if headers_req and span:
+        _set_headers(span, headers_req, "request")
+
     if required_adresses is not None:
         _DD_WAF_DATA.set({key: current_directory.get(key, None) for key in required_adresses})
 
@@ -122,9 +167,12 @@ def set_address(name, value):  # type: (str, Any) -> None
     main_data = _DD_WAF_DATA.get()
     if name.endswith("HEADERS_NO_COOKIES") and value is not None:
         value = _transform_headers(value)
-    if name == "REQUEST_HEADERS_NO_COOKIES":
+    if name == "REQUEST_HEADERS_NO_COOKIES" and value is not None:
         if "text/html" in value.get("accept", ""):
             _DD_RESPONSE_CONTENT_TYPE.set("text/html")
+        span = _DD_WAF_ROOTSPAN.get()
+        if span:
+            _set_headers(span, value, "request")
     main_data[name] = value
 
 
@@ -137,7 +185,8 @@ def call_waf_callback(custom_data=None):
     # type: (dict[str, Any] | None) -> None
     if not config._appsec_enabled:
         return
-    callback, span = _DD_WAF_CALLBACK.get()
+    callback = _DD_WAF_CALLBACK.get()
+    span = _DD_WAF_ROOTSPAN.get()
     if callback:
         main_data = _DD_WAF_DATA.get()
         data_sent = _DD_WAF_DATA_SENT.get()
@@ -169,7 +218,7 @@ def call_waf_callback(custom_data=None):
 
 def asm_request_context_set(remote_ip=None, headers=None, headers_case_sensitive=False, block_request_callable=None):
     # type: (Optional[str], Any, bool, Optional[Callable]) -> None
-    _DD_WAF_DATA.set({})
+    _DD_WAF_DATA.set({"REQUEST_HEADERS_NO_COOKIES": None, "RESPONSE_HEADERS_NO_COOKIES": None})
     _DD_WAF_DATA_SENT.set(set())
     set_waf_callback(None, None, None)
     set_address("REQUEST_HEADERS_NO_COOKIES", headers)

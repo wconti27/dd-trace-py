@@ -103,7 +103,7 @@ def test_enable_bad_rules(rule, exc, tracer):
 def test_retain_traces(tracer_appsec):
     tracer = tracer_appsec
 
-    with tracer.trace("test", span_type=SpanTypes.WEB) as span:
+    with _asm_request_context.asm_request_context_manager(), tracer.trace("test", span_type=SpanTypes.WEB) as span:
         set_http_meta(span, {}, raw_uri="http://example.com/.git", status_code="404")
 
     assert span.context.sampling_priority == USER_KEEP
@@ -140,7 +140,7 @@ def test_header_attack(tracer_appsec):
 def test_headers_collection(tracer_appsec):
     tracer = tracer_appsec
 
-    with tracer.trace("test", span_type=SpanTypes.WEB) as span:
+    with _asm_request_context.asm_request_context_manager(), tracer.trace("test", span_type=SpanTypes.WEB) as span:
         set_http_meta(
             span,
             Config(),
@@ -198,7 +198,7 @@ def test_appsec_cookies_no_collection_snapshot(tracer):
 def test_appsec_body_no_collection_snapshot(tracer):
     with override_global_config(dict(_appsec_enabled=True)):
         _enable_appsec(tracer)
-        with tracer.trace("test", span_type=SpanTypes.WEB) as span:
+        with _asm_request_context.asm_request_context_manager(), tracer.trace("test", span_type=SpanTypes.WEB) as span:
             set_http_meta(
                 span,
                 {},
@@ -326,7 +326,9 @@ def test_appsec_span_tags_snapshot_with_errors(tracer):
     with override_global_config(dict(_appsec_enabled=True)):
         with override_env(dict(DD_APPSEC_RULES=os.path.join(ROOT_DIR, "rules-with-2-errors.json"))):
             _enable_appsec(tracer)
-            with tracer.trace("test", span_type=SpanTypes.WEB) as span:
+            with _asm_request_context.asm_request_context_manager(), tracer.trace(
+                "test", span_type=SpanTypes.WEB
+            ) as span:
                 span.set_tag("http.url", "http://example.com/.git")
                 set_http_meta(span, {}, raw_uri="http://example.com/.git", status_code="404")
 
@@ -411,7 +413,7 @@ def test_obfuscation_parameter_key_and_value_invalid_regex():
 def test_obfuscation_parameter_value_unconfigured_not_matching(tracer_appsec):
     tracer = tracer_appsec
 
-    with tracer.trace("test", span_type=SpanTypes.WEB) as span:
+    with _asm_request_context.asm_request_context_manager(), tracer.trace("test", span_type=SpanTypes.WEB) as span:
         set_http_meta(span, Config(), raw_uri="http://example.com/.git?hello=goodbye", status_code="404")
 
     assert "triggers" in json.loads(span.get_tag("_dd.appsec.json"))
@@ -424,7 +426,7 @@ def test_obfuscation_parameter_value_unconfigured_not_matching(tracer_appsec):
 def test_obfuscation_parameter_value_unconfigured_matching(tracer_appsec):
     tracer = tracer_appsec
 
-    with tracer.trace("test", span_type=SpanTypes.WEB) as span:
+    with _asm_request_context.asm_request_context_manager(), tracer.trace("test", span_type=SpanTypes.WEB) as span:
         set_http_meta(span, Config(), raw_uri="http://example.com/.git?password=goodbye", status_code="404")
 
     assert "triggers" in json.loads(span.get_tag("_dd.appsec.json"))
@@ -440,7 +442,7 @@ def test_obfuscation_parameter_value_configured_not_matching(tracer):
     ):
         _enable_appsec(tracer)
 
-        with tracer.trace("test", span_type=SpanTypes.WEB) as span:
+        with _asm_request_context.asm_request_context_manager(), tracer.trace("test", span_type=SpanTypes.WEB) as span:
             set_http_meta(span, Config(), raw_uri="http://example.com/.git?password=goodbye", status_code="404")
 
         assert "triggers" in json.loads(span.get_tag("_dd.appsec.json"))
@@ -456,7 +458,7 @@ def test_obfuscation_parameter_value_configured_matching(tracer):
     ):
         _enable_appsec(tracer)
 
-        with tracer.trace("test", span_type=SpanTypes.WEB) as span:
+        with _asm_request_context.asm_request_context_manager(), tracer.trace("test", span_type=SpanTypes.WEB) as span:
             set_http_meta(span, Config(), raw_uri="http://example.com/.git?token=goodbye", status_code="404")
 
         assert "triggers" in json.loads(span.get_tag("_dd.appsec.json"))
@@ -585,7 +587,7 @@ def test_ddwaf_run_contained_typeerror(tracer_appsec, caplog):
     with caplog.at_level(logging.DEBUG), mock.patch(
         "ddtrace.appsec.ddwaf.ddwaf_run", side_effect=TypeError("expected c_long instead of int")
     ):
-        with tracer.trace("test", span_type=SpanTypes.WEB) as span:
+        with _asm_request_context.asm_request_context_manager(), tracer.trace("test", span_type=SpanTypes.WEB) as span:
             set_http_meta(
                 span,
                 config,

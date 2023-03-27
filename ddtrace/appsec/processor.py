@@ -25,7 +25,6 @@ from ddtrace.appsec.ddwaf import version
 from ddtrace.constants import MANUAL_KEEP_KEY
 from ddtrace.constants import ORIGIN_KEY
 from ddtrace.constants import RUNTIME_FAMILY
-from ddtrace.contrib.trace_utils import _normalize_tag_name
 from ddtrace.ext import SpanTypes
 from ddtrace.internal import _context
 from ddtrace.internal.logger import get_logger
@@ -67,43 +66,6 @@ def get_appsec_obfuscation_parameter_value_regexp():
     return ensure_binary(
         os.getenv("DD_APPSEC_OBFUSCATION_PARAMETER_VALUE_REGEXP", DEFAULT.APPSEC_OBFUSCATION_PARAMETER_VALUE_REGEXP)
     )
-
-
-_COLLECTED_REQUEST_HEADERS = {
-    "accept",
-    "accept-encoding",
-    "accept-language",
-    "cf-connecting-ip",
-    "cf-connecting-ipv6",
-    "content-encoding",
-    "content-language",
-    "content-length",
-    "content-type",
-    "fastly-client-ip",
-    "forwarded",
-    "forwarded-for",
-    "host",
-    "true-client-ip",
-    "user-agent",
-    "via",
-    "x-client-ip",
-    "x-cluster-client-ip",
-    "x-forwarded",
-    "x-forwarded-for",
-    "x-real-ip",
-}
-
-
-def _set_headers(span, headers, kind):
-    # type: (Span, Any, str) -> None
-    for k in headers:
-        if isinstance(k, tuple):
-            key, value = k
-        else:
-            key, value = k, headers[k]
-        if key.lower() in _COLLECTED_REQUEST_HEADERS:
-            # since the header value can be a list, use `set_tag()` to ensure it is converted to a string
-            span.set_tag(_normalize_tag_name(kind, key), value)
 
 
 def _get_rate_limiter():
@@ -311,7 +273,7 @@ class AppSecSpanProcessor(SpanProcessor):
             ]:
                 headers_req = _context.get_item(id_tag, span=span)
                 if headers_req:
-                    _set_headers(span, headers_req, kind=kind)
+                    _asm_request_context._set_headers(span, headers_req, kind=kind)
 
             if waf_results and waf_results.data:
                 span.set_tag_str(APPSEC.JSON, '{"triggers":%s}' % (waf_results.data,))
@@ -336,7 +298,6 @@ class AppSecSpanProcessor(SpanProcessor):
 
     def on_span_finish(self, span):
         # type: (Span) -> None
-
         if span.span_type != SpanTypes.WEB:
             return
         # this call is only necessary for tests or frameworks that are not using blocking
@@ -347,6 +308,6 @@ class AppSecSpanProcessor(SpanProcessor):
         self._ddwaf._at_request_end()
 
         # Force to set respond headers at the end
-        headers_req = _context.get_item(SPAN_DATA_NAMES.RESPONSE_HEADERS_NO_COOKIES, span=span)
-        if headers_req:
-            _set_headers(span, headers_req, kind="response")
+        headers_res = _asm_request_context.get_address("RESPONSE_HEADERS_NO_COOKIES")
+        if headers_res:
+            _asm_request_context._set_headers(span, headers_res, kind="response")
