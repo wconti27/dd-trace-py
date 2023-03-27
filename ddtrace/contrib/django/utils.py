@@ -376,7 +376,7 @@ def _after_request_tags(pin, span, request, response):
 
             request_headers = None
             if config._appsec_enabled:
-                request_headers = _asm_request_context.get_address("REQUEST_HTTP_IP")
+                request_headers = _asm_request_context.get_address("REQUEST_HTTP_HEADERS_NO_COOKIE")
 
             if not request_headers:
                 # did not go through AppSecProcessor.on_span_start

@@ -56,6 +56,7 @@ _DD_RESPONSE_CONTENT_TYPE = contextvars.ContextVar("datadog_response_content_typ
 _DD_BLOCK_REQUEST_CALLABLE = contextvars.ContextVar("datadog_block_request_callable_contextvar", default=None)
 _DD_WAF_CALLBACK = contextvars.ContextVar("datadog_early_waf_callback", default=None)
 _DD_WAF_DATA = contextvars.ContextVar("datadog_waf_data", default=None)
+_DD_WAF_DATA_SENT = contextvars.ContextVar("datadog_waf_data_sent", default=None)
 
 _DD_WAF_RESULTS = contextvars.ContextVar("datadog_early_waf_results", default=([[], [], []]))
 
@@ -63,6 +64,7 @@ _DD_WAF_RESULTS = contextvars.ContextVar("datadog_early_waf_results", default=([
 def reset():  # type: () -> None
     _DD_RESPONSE_CONTENT_TYPE.set("text/json")
     _DD_BLOCK_REQUEST_CALLABLE.set(None)
+    _DD_WAF_DATA_SENT.set(set())
     set_waf_callback(None, None, {})
 
 
@@ -121,7 +123,7 @@ def set_address(name, value):  # type: (str, Any) -> None
     if name.endswith("HEADERS_NO_COOKIES") and value is not None:
         value = _transform_headers(value)
     if name == "REQUEST_HEADERS_NO_COOKIES":
-        if "text/html" in value.get("Accept", ""):
+        if "text/html" in value.get("accept", ""):
             _DD_RESPONSE_CONTENT_TYPE.set("text/html")
     main_data[name] = value
 
@@ -138,6 +140,7 @@ def call_waf_callback(custom_data=None):
     callback, span = _DD_WAF_CALLBACK.get()
     if callback:
         main_data = _DD_WAF_DATA.get()
+        data_sent = _DD_WAF_DATA_SENT.get()
         for k, v in main_data.items():
             if v is None:
                 res = _context.get_item(SPAN_DATA_NAMES[k], span=span)
@@ -146,17 +149,19 @@ def call_waf_callback(custom_data=None):
         if custom_data:
             data = custom_data
             for k, v in list(data.items()):
-                if v is None:
-                    value = main_data.get(k, None)
-                    if value is None:
-                        del data[k]
-                    else:
-                        data[k] = value
+                if k not in data_sent:
+                    if v is None:
+                        value = main_data.get(k, None)
+                        if value is None:
+                            del data[k]
+                        else:
+                            data[k] = value
         else:
-            data = {k: v for k, v in main_data.items() if v is not None}
+            data = {k: v for k, v in main_data.items() if v is not None and k not in data_sent}
         if data:
-            for k in data:
-                main_data.pop(k, None)
+            data_sent.update(data)
+            for k, v in data.items():
+                _context.set_item(SPAN_DATA_NAMES[k], v, span=span)
             return callback(data)
     else:
         log.warning("WAF callback called but not set")
@@ -165,6 +170,7 @@ def call_waf_callback(custom_data=None):
 def asm_request_context_set(remote_ip=None, headers=None, headers_case_sensitive=False, block_request_callable=None):
     # type: (Optional[str], Any, bool, Optional[Callable]) -> None
     _DD_WAF_DATA.set({})
+    _DD_WAF_DATA_SENT.set(set())
     set_waf_callback(None, None, None)
     set_address("REQUEST_HEADERS_NO_COOKIES", headers)
     set_address("REQUEST_HEADERS_NO_COOKIES_CASE", headers_case_sensitive)
