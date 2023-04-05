@@ -230,7 +230,7 @@ class LogWriter(TraceWriter):
         pass
 
 
-class HTTPWriter(periodic.PeriodicService, TraceWriter):
+class HTTPWriter:
     """Writer to an arbitrary HTTP intake endpoint."""
 
     def __init__(
@@ -250,11 +250,18 @@ class HTTPWriter(periodic.PeriodicService, TraceWriter):
         sync_mode=False,  # type: bool
         reuse_connections=None,  # type: Optional[bool]
         headers=None,  # type: Optional[Dict[str, str]]
+        interval=None,
+        retry_attempts=5,
+        http_method="PUT",
+        statsd_namespace="tracer",
     ):
         # type: (...) -> None
 
-        super(HTTPWriter, self).__init__(interval=processing_interval)
         self.intake_url = intake_url
+        self._interval = interval
+        self._retry_attempts = retry_attempts
+        self._http_method = http_method
+        self._statsd_namespace = statsd_namespace
         self._buffer_size = buffer_size
         self._max_payload_size = max_payload_size
         self._sampler = sampler
@@ -278,10 +285,10 @@ class HTTPWriter(periodic.PeriodicService, TraceWriter):
             # Retry RETRY_ATTEMPTS times within the first half of the processing
             # interval, using a Fibonacci policy with jitter
             wait=tenacity.wait_random_exponential(
-                multiplier=(0.618 * self.interval / (1.618 ** self.RETRY_ATTEMPTS) / 2),  # type: ignore[attr-defined]
+                multiplier=(0.618 * self._interval / (1.618 ** self._retry_attempts) / 2),  # type: ignore[attr-defined]
                 exp_base=1.618,
             ),
-            stop=tenacity.stop_after_attempt(self.RETRY_ATTEMPTS),  # type: ignore[attr-defined]
+            stop=tenacity.stop_after_attempt(self._retry_attempts),  # type: ignore[attr-defined]
             retry=tenacity.retry_if_exception_type((compat.httplib.HTTPException, OSError, IOError)),
         )
         self._log_error_payloads = asbool(os.environ.get("_DD_TRACE_WRITER_LOG_ERROR_PAYLOADS", False))
@@ -338,10 +345,10 @@ class HTTPWriter(periodic.PeriodicService, TraceWriter):
                 log.debug("creating new intake connection to %s with timeout %d", self.intake_url, self._timeout)
                 self._conn = get_connection(self.intake_url, self._timeout)
             try:
-                self._conn.request(self.HTTP_METHOD, self._endpoint, data, headers)  # type: ignore[attr-defined]
+                self._conn.request(self._http_method, self._endpoint, data, headers)  # type: ignore[attr-defined]
                 resp = compat.get_connection_response(self._conn)
                 t = sw.elapsed()
-                if t >= self.interval:
+                if t >= self._interval:
                     log_level = logging.WARNING
                 else:
                     log_level = logging.DEBUG
@@ -398,15 +405,6 @@ class HTTPWriter(periodic.PeriodicService, TraceWriter):
         if spans is None:
             return
 
-        if self._sync_mode is False:
-            # Start the HTTPWriter on first write.
-            try:
-                if self.status != service.ServiceStatus.RUNNING:
-                    self.start()
-
-            except service.ServiceStatusError:
-                pass
-
         self._metrics_dist("writer.accepted.traces")
         self._set_keep_rate(spans)
 
@@ -424,15 +422,15 @@ class HTTPWriter(periodic.PeriodicService, TraceWriter):
         except BufferFull as e:
             payload_size = e.args[0]
             log.warning(
-                "trace buffer (%s traces %db/%db) cannot fit trace of size %db, dropping (writer status: %s)",
+                "trace buffer (%s traces %db/%db) cannot fit trace of size %db, dropping",
                 len(self._encoder),
                 self._encoder.size,
                 self._encoder.max_size,
                 payload_size,
-                self.status.value,
             )
             self._metrics_dist("buffer.dropped.traces", 1, tags=["reason:full"])
             self._metrics_dist("buffer.dropped.bytes", payload_size, tags=["reason:full"])
+            raise
         else:
             self._metrics_dist("buffer.accepted.traces", 1)
             self._metrics_dist("buffer.accepted.spans", len(spans))
@@ -470,7 +468,7 @@ class HTTPWriter(periodic.PeriodicService, TraceWriter):
                     )
             finally:
                 if config.health_metrics_enabled and self.dogstatsd:
-                    namespace = self.STATSD_NAMESPACE  # type: ignore[attr-defined]
+                    namespace = self._statsd_namespace  # type: ignore[attr-defined]
                     # Note that we cannot use the batching functionality of dogstatsd because
                     # it's not thread-safe.
                     # https://github.com/DataDog/datadogpy/issues/439
@@ -485,26 +483,8 @@ class HTTPWriter(periodic.PeriodicService, TraceWriter):
             self._set_drop_rate()
             self._metrics_reset()
 
-    def periodic(self):
-        self.flush_queue(raise_exc=False)
 
-    def _stop_service(
-        self,
-        timeout=None,  # type: Optional[float]
-    ):
-        # type: (...) -> None
-        # FIXME: don't join() on stop(), let the caller handle this
-        super(HTTPWriter, self)._stop_service()
-        self.join(timeout=timeout)
-
-    def on_shutdown(self):
-        try:
-            self.periodic()
-        finally:
-            self._reset_connection()
-
-
-class AgentWriter(HTTPWriter):
+class AgentWriter(periodic.PeriodicService, TraceWriter):
     """
     The Datadog Agent supports (at the time of writing this) receiving trace
     payloads up to 50MB. A trace payload is just a list of traces and the agent
@@ -535,6 +515,7 @@ class AgentWriter(HTTPWriter):
         headers=None,  # type: Optional[Dict[str, str]]
     ):
         # type: (...) -> None
+        super(AgentWriter, self).__init__(interval=processing_interval)
         if buffer_size is not None and buffer_size <= 0:
             raise ValueError("Writer buffer size must be positive")
         if max_payload_size is not None and max_payload_size <= 0:
@@ -592,7 +573,10 @@ class AgentWriter(HTTPWriter):
         additional_header_str = os.environ.get("_DD_TRACE_WRITER_ADDITIONAL_HEADERS")
         if additional_header_str is not None:
             headers.update(parse_tags_str(additional_header_str))
-        super(AgentWriter, self).__init__(
+
+        self._sync_mode = sync_mode
+
+        self.http_client = HTTPWriter(
             intake_url=agent_url,
             endpoint=endpoint,
             encoder=encoder,
@@ -606,30 +590,34 @@ class AgentWriter(HTTPWriter):
             sync_mode=sync_mode,
             reuse_connections=reuse_connections,
             headers=headers,
+            interval=self.interval,
+            retry_attempts=self.RETRY_ATTEMPTS,
+            http_method=self.HTTP_METHOD,
+            statsd_namespace=self.STATSD_NAMESPACE,
         )
 
     def recreate(self):
         # type: () -> HTTPWriter
         return self.__class__(
             agent_url=self.agent_url,
-            sampler=self._sampler,
-            priority_sampler=self._priority_sampler,
-            processing_interval=self._interval,
-            buffer_size=self._buffer_size,
-            max_payload_size=self._max_payload_size,
-            timeout=self._timeout,
-            dogstatsd=self.dogstatsd,
+            sampler=self.http_client._sampler,
+            priority_sampler=self.http_client._priority_sampler,
+            processing_interval=self.interval,
+            buffer_size=self.http_client._buffer_size,
+            max_payload_size=self.http_client._max_payload_size,
+            timeout=self.http_client._timeout,
+            dogstatsd=self.http_client.dogstatsd,
             sync_mode=self._sync_mode,
             api_version=self._api_version,
         )
 
     @property
     def agent_url(self):
-        return self.intake_url
+        return self.http_client.intake_url
 
     @property
     def _agent_endpoint(self):
-        return self._intake_endpoint
+        return self.http_client._intake_endpoint
 
     def _downgrade(self, payload, response):
         if self._endpoint == "v0.5/traces":
@@ -655,7 +643,7 @@ class AgentWriter(HTTPWriter):
         raise ValueError()
 
     def _send_payload(self, payload, count):
-        response = super(AgentWriter, self)._send_payload(payload, count)
+        response = self.http_client._send_payload(payload, count)
         if response.status in [404, 415]:
             log.debug("calling endpoint '%s' but received %s; downgrading API", self._endpoint, response.status)
             try:
@@ -706,3 +694,64 @@ class AgentWriter(HTTPWriter):
         headers = self._headers.copy()
         headers["X-Datadog-Trace-Count"] = str(count)
         return headers
+
+    @property
+    def _intake_endpoint(self):
+        return self.http_client._intake_endpoint
+
+    def _metrics_dist(self, name, count=1, tags=None):
+        return self.http_client._metrics_dist(name, count=count, tags=tags)
+
+    def _metrics_reset(self):
+        return self.http_client._metrics_reset()
+
+    @property
+    def _metrics(self):
+        return self.http_client._metrics
+
+    def _set_drop_rate(self):
+        return self.http_client._set_drop_rate()
+
+    def _set_keep_rate(self, trace):
+        return self.http_client._set_keep_rate(trace)
+
+    def _put(self, data, headers):
+        return self.http_client._put(data, headers)
+
+    def write(self, spans=None):
+        if self._sync_mode is False:
+            try:
+                if self.status != service.ServiceStatus.RUNNING:
+                    self.start()
+
+            except service.ServiceStatusError:
+                pass
+
+        try:
+            return self.http_client.write(spans=spans)
+        except BufferFull:
+            log.warning(
+                "writer status on BufferFull exception: %s",
+                self.status.value,
+            )
+
+    def flush_queue(self, raise_exc=False):
+        return self.http_client.flush_queue(raise_exc=raise_exc)
+
+    def periodic(self):
+        self.http_client.flush_queue(raise_exc=False)
+
+    def _stop_service(
+        self,
+        timeout=None,  # type: Optional[float]
+    ):
+        # type: (...) -> None
+        # FIXME: don't join() on stop(), let the caller handle this
+        super(AgentWriter, self)._stop_service()
+        self.join(timeout=timeout)
+
+    def on_shutdown(self):
+        try:
+            self.periodic()
+        finally:
+            self.http_client._reset_connection()

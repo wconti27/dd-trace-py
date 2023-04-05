@@ -168,7 +168,7 @@ class AgentWriterTests(BaseTestCase):
         writer_metrics_reset = mock.Mock()
         with override_global_config(dict(health_metrics_enabled=False)):
             writer = AgentWriter(agent_url="http://asdf:1234", dogstatsd=statsd)
-            writer._metrics_reset = writer_metrics_reset
+            writer.http_client._metrics_reset = writer_metrics_reset
             for i in range(10):
                 writer.write([Span(name="name", trace_id=i, span_id=j, parent_id=j - 1 or None) for j in range(5)])
             writer.stop()
@@ -184,7 +184,7 @@ class AgentWriterTests(BaseTestCase):
         writer_metrics_reset = mock.Mock()
         with override_global_config(dict(health_metrics_enabled=False)):
             writer = AgentWriter(agent_url="http://asdf:1234", dogstatsd=statsd)
-            writer._metrics_reset = writer_metrics_reset
+            writer.http_client._metrics_reset = writer_metrics_reset
             for i in range(10):
                 writer.write([Span(name="name", trace_id=i, span_id=j, parent_id=j - 1 or None) for j in range(5)])
             writer.write(
@@ -203,7 +203,7 @@ class AgentWriterTests(BaseTestCase):
         writer_metrics_reset = mock.Mock()
         with override_global_config(dict(health_metrics_enabled=False)):
             writer = AgentWriter(agent_url="http://asdf:1234", buffer_size=5125, dogstatsd=statsd)
-            writer._metrics_reset = writer_metrics_reset
+            writer.http_client._metrics_reset = writer_metrics_reset
             for i in range(10):
                 writer.write([Span(name="name", trace_id=i, span_id=j, parent_id=j - 1 or None) for j in range(5)])
             writer.write([Span(name="a", trace_id=i, span_id=j, parent_id=j - 1 or None) for j in range(5)])
@@ -224,8 +224,8 @@ class AgentWriterTests(BaseTestCase):
         writer_encoder.encode.side_effect = Exception
         with override_global_config(dict(health_metrics_enabled=False)):
             writer = AgentWriter(agent_url="http://asdf:1234", dogstatsd=statsd)
-            writer._encoder = writer_encoder
-            writer._metrics_reset = writer_metrics_reset
+            writer.http_client._encoder = writer_encoder
+            writer.http_client._metrics_reset = writer_metrics_reset
             for i in range(n_traces):
                 writer.write([Span(name="name", trace_id=i, span_id=j, parent_id=j - 1 or None) for j in range(5)])
 
@@ -243,8 +243,8 @@ class AgentWriterTests(BaseTestCase):
         writer_put.return_value = Response(status=200)
         with override_global_config(dict(health_metrics_enabled=False)):
             writer = AgentWriter(agent_url="http://asdf:1234", dogstatsd=statsd)
-            writer.run_periodic = writer_run_periodic
-            writer._put = writer_put
+            writer.http_client.run_periodic = writer_run_periodic
+            writer.http_client._put = writer_put
 
             traces = [
                 [Span(name="name", trace_id=i, span_id=j, parent_id=j - 1 or None) for j in range(5)] for i in range(4)
@@ -262,7 +262,7 @@ class AgentWriterTests(BaseTestCase):
 
             payload = msgpack.unpackb(writer_put.call_args.args[0])
             # No previous drops.
-            assert 0.0 == writer._drop_sma.get()
+            assert 0.0 == writer.http_client._drop_sma.get()
             # 4 traces written.
             assert 4 == len(payload)
             # 100% of traces kept (refers to the past).
@@ -277,7 +277,7 @@ class AgentWriterTests(BaseTestCase):
 
             # 50% of traces were dropped historically.
             # 4 successfully written before and 4 dropped now.
-            assert 0.5 == writer._drop_sma.get()
+            assert 0.5 == writer.http_client._drop_sma.get()
             # put not called since no new traces are available.
             writer_put.assert_called_once()
 
@@ -288,7 +288,7 @@ class AgentWriterTests(BaseTestCase):
 
             payload = msgpack.unpackb(writer_put.call_args.args[0])
             # 40% of traces were dropped historically.
-            assert 0.4 == writer._drop_sma.get()
+            assert 0.4 == writer.http_client._drop_sma.get()
             # 2 traces written.
             assert 2 == len(payload)
             # 50% of traces kept (refers to the past).
@@ -304,7 +304,7 @@ class AgentWriterTests(BaseTestCase):
 
             payload = msgpack.unpackb(writer_put.call_args.args[0])
             # 50% of traces were dropped historically.
-            assert 0.5 == writer._drop_sma.get()
+            assert 0.5 == writer.http_client._drop_sma.get()
             # 1 trace written.
             assert 1 == len(payload)
             # 60% of traces kept (refers to the past).
@@ -466,18 +466,18 @@ def test_agent_url_path(endpoint_assert_path):
     # test without base path
     endpoint_assert_path("/v0.")
     writer = AgentWriter(agent_url="http://%s:%s/" % (_HOST, _PORT))
-    writer._encoder.put([Span("foobar")])
+    writer.http_client._encoder.put([Span("foobar")])
     writer.flush_queue(raise_exc=True)
 
     # test without base path nor trailing slash
     writer = AgentWriter(agent_url="http://%s:%s" % (_HOST, _PORT))
-    writer._encoder.put([Span("foobar")])
+    writer.http_client._encoder.put([Span("foobar")])
     writer.flush_queue(raise_exc=True)
 
     # test with a base path
     endpoint_assert_path("/test/v0.")
     writer = AgentWriter(agent_url="http://%s:%s/test/" % (_HOST, _PORT))
-    writer._encoder.put([Span("foobar")])
+    writer.http_client._encoder.put([Span("foobar")])
     writer.flush_queue(raise_exc=True)
 
 
@@ -488,14 +488,14 @@ def test_flush_connection_timeout_connect():
     else:
         exc_type = socket.error
     with pytest.raises(exc_type):
-        writer._encoder.put([Span("foobar")])
+        writer.http_client._encoder.put([Span("foobar")])
         writer.flush_queue(raise_exc=True)
 
 
 def test_flush_connection_timeout(endpoint_test_timeout_server):
     writer = AgentWriter(agent_url="http://%s:%s" % (_HOST, _TIMEOUT_PORT))
     with pytest.raises(socket.timeout):
-        writer._encoder.put([Span("foobar")])
+        writer.http_client._encoder.put([Span("foobar")])
         writer.flush_queue(raise_exc=True)
 
 
@@ -506,13 +506,13 @@ def test_flush_connection_reset(endpoint_test_reset_server):
     else:
         exc_types = (httplib.BadStatusLine,)
     with pytest.raises(exc_types):
-        writer._encoder.put([Span("foobar")])
+        writer.http_client._encoder.put([Span("foobar")])
         writer.flush_queue(raise_exc=True)
 
 
 def test_flush_connection_uds(endpoint_uds_server):
     writer = AgentWriter(agent_url="unix://%s" % endpoint_uds_server.server_address)
-    writer._encoder.put([Span("foobar")])
+    writer.http_client._encoder.put([Span("foobar")])
     writer.flush_queue(raise_exc=True)
 
 
@@ -542,14 +542,14 @@ def test_racing_start():
     for t in ts:
         t.join()
 
-    assert len(writer._encoder) == 100
+    assert len(writer.http_client._encoder) == 100
 
 
 def test_additional_headers():
     with override_env(dict(_DD_TRACE_WRITER_ADDITIONAL_HEADERS="additional-header:additional-value,header2:value2")):
         writer = AgentWriter(agent_url="http://localhost:9126")
-        assert writer._headers["additional-header"] == "additional-value"
-        assert writer._headers["header2"] == "value2"
+        assert writer.http_client._headers["additional-header"] == "additional-value"
+        assert writer.http_client._headers["header2"] == "value2"
 
 
 def test_bad_encoding(monkeypatch):
@@ -571,13 +571,13 @@ def test_bad_encoding(monkeypatch):
 def test_writer_recreate_api_version(init_api_version, api_version, endpoint, encoder_cls):
     writer = AgentWriter(agent_url="http://dne:1234", api_version=init_api_version)
     assert writer._api_version == api_version
-    assert writer._endpoint == endpoint
-    assert isinstance(writer._encoder, encoder_cls)
+    assert writer.http_client._endpoint == endpoint
+    assert isinstance(writer.http_client._encoder, encoder_cls)
 
     writer = writer.recreate()
     assert writer._api_version == api_version
-    assert writer._endpoint == endpoint
-    assert isinstance(writer._encoder, encoder_cls)
+    assert writer.http_client._endpoint == endpoint
+    assert isinstance(writer.http_client._encoder, encoder_cls)
 
 
 @pytest.mark.parametrize(
@@ -663,11 +663,11 @@ def test_writer_api_version_selection(
 def test_writer_reuse_connections_envvar(monkeypatch):
     monkeypatch.setenv("DD_TRACE_WRITER_REUSE_CONNECTIONS", "false")
     writer = AgentWriter(agent_url="http://localhost:9126")
-    assert not writer._reuse_connections
+    assert not writer.http_client._reuse_connections
 
     monkeypatch.setenv("DD_TRACE_WRITER_REUSE_CONNECTIONS", "true")
     writer = AgentWriter(agent_url="http://localhost:9126")
-    assert writer._reuse_connections
+    assert writer.http_client._reuse_connections
 
 
 def test_writer_reuse_connections():
@@ -675,9 +675,9 @@ def test_writer_reuse_connections():
     writer = AgentWriter(agent_url="http://localhost:9126", reuse_connections=True)
     # Do an initial flush to get a connection
     writer.flush_queue()
-    assert writer._conn is None
+    assert writer.http_client._conn is None
     writer.flush_queue()
-    assert writer._conn is None
+    assert writer.http_client._conn is None
 
 
 def test_writer_reuse_connections_false():
@@ -685,10 +685,10 @@ def test_writer_reuse_connections_false():
     writer = AgentWriter(agent_url="http://localhost:9126", reuse_connections=False)
     # Do an initial flush to get a connection
     writer.flush_queue()
-    conn = writer._conn
+    conn = writer.http_client._conn
     # And another to potentially have it reset
     writer.flush_queue()
-    assert writer._conn is conn
+    assert writer.http_client._conn is conn
 
 
 @pytest.mark.subprocess(env=dict(DD_TRACE_128_BIT_TRACEID_GENERATION_ENABLED="true"))
