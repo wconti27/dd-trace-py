@@ -364,11 +364,8 @@ class HTTPWriter:
                 if not self._reuse_connections:
                     self._reset_connection()
 
-    def _get_finalized_headers(self, count):
-        return self._headers.copy()
-
-    def _send_payload(self, payload, count):
-        headers = self._get_finalized_headers(count)
+    def _send_payload(self, payload, count, headers=None):
+        headers = headers or self._headers.copy()
 
         self._metrics_dist("http.requests")
 
@@ -645,7 +642,9 @@ class AgentWriter(periodic.PeriodicService, TraceWriter):
         raise ValueError()
 
     def _send_payload(self, payload, count):
-        response = self.http_client._send_payload(payload, count)
+        headers = self.http_client._headers.copy()
+        headers["X-Datadog-Trace-Count"] = str(count)
+        response = self.http_client._send_payload(payload, count, headers=headers)
         if response.status in [404, 415]:
             log.debug("calling endpoint '%s' but received %s; downgrading API", self._endpoint, response.status)
             try:
@@ -692,15 +691,6 @@ class AgentWriter(periodic.PeriodicService, TraceWriter):
         except service.ServiceStatusError:
             pass
 
-    def _get_finalized_headers(self, count):
-        headers = self._headers.copy()
-        headers["X-Datadog-Trace-Count"] = str(count)
-        return headers
-
-    @property
-    def _intake_endpoint(self):
-        return self.http_client._intake_endpoint
-
     def _metrics_dist(self, name, count=1, tags=None):
         return self.http_client._metrics_dist(name, count=count, tags=tags)
 
@@ -716,9 +706,6 @@ class AgentWriter(periodic.PeriodicService, TraceWriter):
 
     def _set_keep_rate(self, trace):
         return self.http_client._set_keep_rate(trace)
-
-    def _put(self, data, headers):
-        return self.http_client._put(data, headers)
 
     def write(self, spans=None):
         if self._sync_mode is False:
@@ -741,7 +728,7 @@ class AgentWriter(periodic.PeriodicService, TraceWriter):
         return self.http_client.flush_queue(raise_exc=raise_exc)
 
     def periodic(self):
-        self.http_client.flush_queue(raise_exc=False)
+        self.flush_queue()
 
     def _stop_service(
         self,
