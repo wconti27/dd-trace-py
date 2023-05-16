@@ -1,3 +1,5 @@
+from distutils.command.clean import clean as CleanCommand
+import glob
 import hashlib
 import os
 import platform
@@ -7,11 +9,18 @@ import subprocess
 import sys
 import tarfile
 
+<<<<<<< HEAD
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
-from setuptools.command.build_py import build_py as BuildPyCommand
+=======
 from pkg_resources import get_build_platform
-from distutils.command.clean import clean as CleanCommand
+from setuptools import Extension
+from setuptools import find_packages
+from setuptools import setup
+from setuptools.command.build_ext import build_ext as BuildExtCommand
+>>>>>>> 54aaebe50 (chore: drop testing and builds for Python < 3.7)
+from setuptools.command.build_py import build_py as BuildPyCommand
+
 
 
 try:
@@ -598,10 +607,10 @@ setup(
         ],
     },
     classifiers=[
+        "Development Status :: 5 - Production/Stable",
+        "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3 :: Only",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
