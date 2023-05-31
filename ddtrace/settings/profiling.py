@@ -200,7 +200,7 @@ class ProfilingConfig(En):
         _libdd_enabled = En.v(
             bool,
             "libdd_enabled",
-            default=False,
+            default=True,
             help_type="Boolean",
             help="Enables collection and export using the experimental exporter",
         )

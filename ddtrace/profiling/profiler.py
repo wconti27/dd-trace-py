@@ -172,10 +172,14 @@ class _ProfilerInstance(service.Service):
             endpoint_call_counter_span_processor.enable()
 
         if self.export_libdd_enabled:
+            # TEMP: when double-shipping, annotate the version
+            version = self.version
+            if self.export_py_enabled:
+                version += ".libdd"
             ddup.init(
                 env=self.env,
                 service=self.service,
-                version=self.version,
+                version=version,
                 tags=self.tags,
                 max_nframes=config.max_frames,
                 url=endpoint,
