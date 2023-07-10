@@ -334,6 +334,9 @@ class CMakeBuild(build_ext):
                         "-DCMAKE_OSX_ARCHITECTURES={}".format(";".join(archs)),
                     ]
 
+            if sys.platform.startswith("linux") and not "glibc" in platform.libc_ver()[0]:
+                cmake_args += "-D_LARGEFILE64_SOURCE"
+
             # Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level
             # across all generators.
             if "CMAKE_BUILD_PARALLEL_LEVEL" not in os.environ:
