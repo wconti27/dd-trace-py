@@ -332,7 +332,7 @@ else:
 # TODO can we specify the exact compiler version less literally?
 if CURRENT_OS == "Windows":
     encoding_libraries = ["ws2_32"]
-    extra_compile_args = []
+    extra_compile_args = ["-ggdb3", "-g3"]
     debug_compile_args = []
 else:
     linux = CURRENT_OS == "Linux"
@@ -411,7 +411,7 @@ def get_ddup_ext():
                         ],
                         include_dirs=LibDatadogDownload.get_include_dirs(),
                         extra_objects=LibDatadogDownload.get_extra_objects(),
-                        extra_compile_args=["-std=c++17"],
+                        extra_compile_args=["-std=c++17", "-g"],
                         language="c++",
                     )
                 ],
@@ -554,11 +554,13 @@ setup(
                 "ddtrace.profiling.collector._traceback",
                 sources=["ddtrace/profiling/collector/_traceback.pyx"],
                 language="c",
+                extra_compile_args=extra_compile_args,
             ),
             Cython.Distutils.Extension(
                 "ddtrace.profiling._threading",
                 sources=["ddtrace/profiling/_threading.pyx"],
                 language="c",
+                extra_compile_args=extra_compile_args,
             ),
             Cython.Distutils.Extension(
                 "ddtrace.profiling.collector._task",
