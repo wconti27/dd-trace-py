@@ -347,11 +347,8 @@ venv = Venv(
             pkgs={
                 "msgpack": latest,
                 "httpretty": "==0.9.7",
-<<<<<<< HEAD
                 "typing-extensions": latest,
-=======
                 "pytest-asyncio": latest,
->>>>>>> 54aaebe50 (chore: drop testing and builds for Python < 3.7)
             },
             pys=select_pys(min_version="3.7"),
         ),
@@ -1363,40 +1360,6 @@ venv = Venv(
                             ">=6.0,<6.1",
                         ]
                     },
-<<<<<<< HEAD
-                    venvs=[
-                        Venv(
-                            pys=["3.6"],
-                            pkgs={"pytest-bdd": [">=4.0,<5.0"]},
-                        ),
-                        Venv(
-                            pys=select_pys(min_version="3.7", max_version="3.9"),
-                            pkgs={
-                                "pytest-bdd": [
-                                    ">=4.0,<5.0",
-                                    ">=6.0,<7.0",
-                                ],
-                                "typing-extensions": [
-                                    latest,
-                                ],
-                            },
-                        ),
-                        Venv(
-                            pys=select_pys(min_version="3.10"),
-                            pkgs={
-                                "pytest-bdd": [
-                                    ">=4.0,<5.0",
-                                    ">=6.0,<7.0",
-                                    latest,
-                                ],
-                                "typing-extensions": [
-                                    latest,
-                                ],
-                            },
-                        ),
-                    ],
-=======
->>>>>>> 54aaebe50 (chore: drop testing and builds for Python < 3.7)
                 ),
             ],
         ),
@@ -2253,14 +2216,8 @@ venv = Venv(
                         # Minimum requirements
                         Venv(
                             pkgs={
-<<<<<<< HEAD
                                 "protobuf": "==3.0.0",
                             }
-=======
-                                "tenacity": "==6.0.0",
-                                "protobuf": "==3.8.0",
-                            },
->>>>>>> 54aaebe50 (chore: drop testing and builds for Python < 3.7)
                         ),
                         # Gevent
                         Venv(
@@ -2312,17 +2269,10 @@ venv = Venv(
                             venvs=[
                                 Venv(
                                     pkgs={
-<<<<<<< HEAD
                                         "protobuf": latest,
                                     },
-=======
-                                        "gevent": "==20.6.1",
-                                        "greenlet": "==0.4.16",
-                                    }
->>>>>>> 54aaebe50 (chore: drop testing and builds for Python < 3.7)
                                 ),
                                 Venv(
-<<<<<<< HEAD
                                     pkgs={
                                         "protobuf": "==3.8.0",
                                     },
@@ -2347,9 +2297,6 @@ venv = Venv(
                                             pkgs={"gevent": latest},
                                         ),
                                     ],
-=======
-                                    pkgs={"gevent": latest},
->>>>>>> 54aaebe50 (chore: drop testing and builds for Python < 3.7)
                                 ),
                             ],
                         ),
@@ -2383,17 +2330,10 @@ venv = Venv(
                             venvs=[
                                 Venv(
                                     pkgs={
-<<<<<<< HEAD
                                         "protobuf": latest,
                                     },
-=======
-                                        "gevent": "==21.8.0",
-                                        "greenlet": "==1.1.0",
-                                    }
->>>>>>> 54aaebe50 (chore: drop testing and builds for Python < 3.7)
                                 ),
                                 Venv(
-<<<<<<< HEAD
                                     pkgs={
                                         "protobuf": "==3.8.0",
                                     },
@@ -2417,9 +2357,6 @@ venv = Venv(
                                             pkgs={"gevent": latest},
                                         ),
                                     ],
-=======
-                                    pkgs={"gevent": latest},
->>>>>>> 54aaebe50 (chore: drop testing and builds for Python < 3.7)
                                 ),
                             ],
                         ),
@@ -2430,7 +2367,6 @@ venv = Venv(
                     pys=select_pys(min_version="3.11"),
                     venvs=[
                         Venv(
-<<<<<<< HEAD
                             pys=["3.8", "3.9"],
                             venvs=[
                                 Venv(
@@ -2465,16 +2401,9 @@ venv = Venv(
                                     ],
                                 ),
                             ],
-=======
-                            pkgs={
-                                "tenacity": latest,
-                                "protobuf": latest,
-                            },
->>>>>>> 54aaebe50 (chore: drop testing and builds for Python < 3.7)
                         ),
                         # Minimum requirements
                         Venv(
-<<<<<<< HEAD
                             pys="3.10",
                             venvs=[
                                 Venv(
@@ -2509,12 +2438,6 @@ venv = Venv(
                                     ],
                                 ),
                             ],
-=======
-                            pkgs={
-                                "tenacity": "==8.2.0",
-                                "protobuf": "==4.22.0",
-                            },
->>>>>>> 54aaebe50 (chore: drop testing and builds for Python < 3.7)
                         ),
                         # Gevent
                         Venv(
@@ -2526,7 +2449,6 @@ venv = Venv(
                             },
                             venvs=[
                                 Venv(
-<<<<<<< HEAD
                                     pkgs={
                                         "protobuf": latest,
                                     },
@@ -2550,9 +2472,6 @@ venv = Venv(
                                             pkgs={"gevent": ["==22.10.2", latest]},
                                         ),
                                     ],
-=======
-                                    pkgs={"gevent": ["==22.10.2", latest]},
->>>>>>> 54aaebe50 (chore: drop testing and builds for Python < 3.7)
                                 ),
                             ],
                         ),
