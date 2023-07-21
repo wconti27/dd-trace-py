@@ -9,16 +9,8 @@ import subprocess
 import sys
 import tarfile
 
-<<<<<<< HEAD
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
-=======
-from pkg_resources import get_build_platform
-from setuptools import Extension
-from setuptools import find_packages
-from setuptools import setup
-from setuptools.command.build_ext import build_ext as BuildExtCommand
->>>>>>> 54aaebe50 (chore: drop testing and builds for Python < 3.7)
 from setuptools.command.build_py import build_py as BuildPyCommand
 
 
@@ -554,31 +546,20 @@ setup(
         "ddtrace.appsec.ddwaf": [os.path.join("libddwaf", "*", "lib", "libddwaf.*")],
         "ddtrace.appsec.iast._taint_tracking": ["CMakeLists.txt"],
     },
-    python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*",
+    python_requires=">=3.7",
     zip_safe=False,
     # enum34 is an enum backport for earlier versions of python
     # funcsigs backport required for vendored debtcollector
     install_requires=[
         "ddsketch>=2.0.1",
-        "enum34; python_version<'3.4'",
-        "funcsigs>=1.0.0; python_version=='2.7'",
-        "typing; python_version<'3.5'",
         "protobuf>=3; python_version>='3.7'",
-        "protobuf>=3,<4.0; python_version=='3.6'",
-        "protobuf>=3,<3.18; python_version<'3.6'",
-        "attrs>=20; python_version>'2.7'",
-        "attrs>=20,<22; python_version=='2.7'",
-        "contextlib2<1.0; python_version=='2.7'",
-        "cattrs<1.1; python_version<='3.6'",
+        "attrs>=20",
         "cattrs; python_version>='3.7'",
         "six>=1.12.0",
         "typing_extensions",
         "importlib_metadata; python_version<'3.8'",
-        "pathlib2; python_version<'3.5'",
         "xmltodict>=0.12",
-        "ipaddress; python_version<'3.7'",
         "envier",
-        "pep562; python_version<'3.7'",
         "opentelemetry-api>=1; python_version>='3.7'",
     ]
     + bytecode,
