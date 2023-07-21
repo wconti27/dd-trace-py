@@ -23,12 +23,12 @@ def version_to_str(version):
     # type: (Tuple[int, int]) -> str
     """Convert a Python version tuple to a string
 
-    >>> version_to_str((2, 7))
-    '2.7'
-    >>> version_to_str((3, 5))
-    '3.5'
-    >>> version_to_str((3, 1))
-    '3.1'
+    >>> version_to_str((3, 7))
+    '3.7'
+    >>> version_to_str((3, 8))
+    '3.8'
+    >>> version_to_str((3, 9))
+    '3.9'
     >>> version_to_str((3, 10))
     '3.10'
     >>> version_to_str((3, 11))
@@ -43,12 +43,12 @@ def str_to_version(version):
     # type: (str) -> Tuple[int, int]
     """Convert a Python version string to a tuple
 
-    >>> str_to_version("2.7")
-    (2, 7)
-    >>> str_to_version("3.5")
-    (3, 5)
-    >>> str_to_version("3.1")
-    (3, 1)
+    >>> str_to_version("3.7")
+    (3, 7)
+    >>> str_to_version("3.8")
+    (3, 8)
+    >>> str_to_version("3.9")
+    (3, 9)
     >>> str_to_version("3.10")
     (3, 10)
     >>> str_to_version("3.11")
@@ -242,16 +242,11 @@ venv = Venv(
                         "AGENT_VERSION": "latest",
                     },
                     venvs=[
-                        Venv(pys=select_pys(max_version="3.5")),
                         Venv(
                             pkgs={
                                 "six": "==1.12.0",
                             },
                             venvs=[
-                                # DEV: attrs marked Python 3.6 as deprecated in 22.2.0,
-                                #      this logs a warning and causes these tests to fail
-                                # https://www.attrs.org/en/22.2.0/changelog.html#id1
-                                Venv(pys="3.6", pkgs={"attrs": "<22.2.0"}),
                                 Venv(pys="3.7"),
                             ],
                         ),
@@ -464,7 +459,6 @@ venv = Venv(
                         "pytest-mock": "==2.0.0",
                     },
                     venvs=[
-                        Venv(pys=select_pys(max_version="3.6")),
                         # exceptiongroup latest specified to avoid riot bug: https://github.com/DataDog/riot/issues/211
                         Venv(pys="3.7", pkgs={"exceptiongroup": latest}),
                     ],
