@@ -15,6 +15,7 @@ Release support
      - Minimum Datadog Agent
    * - ``<1``
      - :ref:`End of Life<versioning_support_eol>`
+     -
    * - ``>=1.0,<2``
      - :ref:`Maintenance<versioning_support_maintenance>`
      - 7.28

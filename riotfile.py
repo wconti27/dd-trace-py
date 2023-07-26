@@ -2186,6 +2186,7 @@ venv = Venv(
         ),
         Venv(
             name="profile",
+            command="python -m tests.profiling.run pytest --no-cov --capture=no --benchmark-disable {cmdargs} tests/profiling",  # noqa: E501
             pkgs={
                 "gunicorn": latest,
                 #
@@ -2196,7 +2197,6 @@ venv = Venv(
                 "uwsgi": latest,
                 "pytest-asyncio": latest,
             },
-            command="python -m tests.profiling.run pytest --no-cov --capture=no --benchmark-disable {cmdargs} tests/profiling",  # noqa: E501
             venvs=[
                 # Python 3.7
                 Venv(
@@ -2204,14 +2204,8 @@ venv = Venv(
                     venvs=[
                         Venv(
                             pkgs={
-                                "protobuf": latest,
+                                "protobuf": ["==3.8.0", latest],
                             },
-                        ),
-                        # Minimum requirements
-                        Venv(
-                            pkgs={
-                                "protobuf": "==3.0.0",
-                            }
                         ),
                         # Gevent
                         Venv(
@@ -2241,15 +2235,7 @@ venv = Venv(
                     venvs=[
                         Venv(
                             pkgs={
-                                "tenacity": latest,
-                                "protobuf": latest,
-                            },
-                        ),
-                        # Minimum requirements
-                        Venv(
-                            pkgs={
-                                "tenacity": "==7.0.0",
-                                "protobuf": "==3.19.0",
+                                "protobuf": ["==3.19.0", latest],
                             },
                         ),
                         # Gevent
@@ -2263,34 +2249,12 @@ venv = Venv(
                             venvs=[
                                 Venv(
                                     pkgs={
-                                        "protobuf": latest,
-                                    },
+                                        "gevent": "==20.6.1",
+                                        "greenlet": "==0.4.16",
+                                    }
                                 ),
                                 Venv(
-                                    pkgs={
-                                        "protobuf": "==3.8.0",
-                                    },
-                                    create=True,  # Needed bp Python 3.5 because of namespace packages
-                                ),
-                                # Gevent
-                                Venv(
-                                    env={
-                                        "DD_PROFILE_TEST_GEVENT": "1",
-                                    },
-                                    pkgs={
-                                        "gunicorn[gevent]": latest,
-                                    },
-                                    venvs=[
-                                        Venv(
-                                            pkgs={
-                                                "gevent": "==1.4.0",
-                                                "greenlet": "==0.4.14",
-                                            }
-                                        ),
-                                        Venv(
-                                            pkgs={"gevent": latest},
-                                        ),
-                                    ],
+                                    pkgs={"gevent": latest},
                                 ),
                             ],
                         ),
@@ -2302,15 +2266,7 @@ venv = Venv(
                     venvs=[
                         Venv(
                             pkgs={
-                                "tenacity": latest,
-                                "protobuf": latest,
-                            },
-                        ),
-                        # Minimum requirements
-                        Venv(
-                            pkgs={
-                                "tenacity": "==8.0.0",
-                                "protobuf": "==3.19.0",
+                                "protobuf": ["==3.19.0", latest],
                             },
                         ),
                         # Gevent
@@ -2324,33 +2280,12 @@ venv = Venv(
                             venvs=[
                                 Venv(
                                     pkgs={
-                                        "protobuf": latest,
-                                    },
+                                        "gevent": "==21.8.0",
+                                        "greenlet": "==1.1.0",
+                                    }
                                 ),
                                 Venv(
-                                    pkgs={
-                                        "protobuf": "==3.8.0",
-                                    },
-                                ),
-                                # Gevent
-                                Venv(
-                                    env={
-                                        "DD_PROFILE_TEST_GEVENT": "1",
-                                    },
-                                    pkgs={
-                                        "gunicorn[gevent]": latest,
-                                    },
-                                    venvs=[
-                                        Venv(
-                                            pkgs={
-                                                "gevent": "==1.4.0",
-                                                "greenlet": "==0.4.14",
-                                            }
-                                        ),
-                                        Venv(
-                                            pkgs={"gevent": latest},
-                                        ),
-                                    ],
+                                    pkgs={"gevent": latest},
                                 ),
                             ],
                         ),
@@ -2361,77 +2296,9 @@ venv = Venv(
                     pys=select_pys(min_version="3.11"),
                     venvs=[
                         Venv(
-                            pys=["3.8", "3.9"],
-                            venvs=[
-                                Venv(
-                                    pkgs={
-                                        "protobuf": latest,
-                                    },
-                                ),
-                                # Minimum requirements
-                                Venv(
-                                    pkgs={
-                                        "protobuf": "==3.19.0",
-                                    },
-                                ),
-                                # Gevent
-                                Venv(
-                                    env={
-                                        "DD_PROFILE_TEST_GEVENT": "1",
-                                    },
-                                    pkgs={
-                                        "gunicorn[gevent]": latest,
-                                    },
-                                    venvs=[
-                                        Venv(
-                                            pkgs={
-                                                "gevent": "==20.6.1",
-                                                "greenlet": "==0.4.16",
-                                            }
-                                        ),
-                                        Venv(
-                                            pkgs={"gevent": latest},
-                                        ),
-                                    ],
-                                ),
-                            ],
-                        ),
-                        # Minimum requirements
-                        Venv(
-                            pys="3.10",
-                            venvs=[
-                                Venv(
-                                    pkgs={
-                                        "protobuf": latest,
-                                    },
-                                ),
-                                # Minimum requirements
-                                Venv(
-                                    pkgs={
-                                        "protobuf": "==3.19.0",
-                                    },
-                                ),
-                                # Gevent
-                                Venv(
-                                    env={
-                                        "DD_PROFILE_TEST_GEVENT": "1",
-                                    },
-                                    pkgs={
-                                        "gunicorn[gevent]": latest,
-                                    },
-                                    venvs=[
-                                        Venv(
-                                            pkgs={
-                                                "gevent": "==21.8.0",
-                                                "greenlet": "==1.1.0",
-                                            }
-                                        ),
-                                        Venv(
-                                            pkgs={"gevent": latest},
-                                        ),
-                                    ],
-                                ),
-                            ],
+                            pkgs={
+                                "protobuf": ["==4.22.0", latest],
+                            },
                         ),
                         # Gevent
                         Venv(
@@ -2443,29 +2310,7 @@ venv = Venv(
                             },
                             venvs=[
                                 Venv(
-                                    pkgs={
-                                        "protobuf": latest,
-                                    },
-                                ),
-                                # Minimum requirements
-                                Venv(
-                                    pkgs={
-                                        "protobuf": "==4.22.0",
-                                    },
-                                ),
-                                # Gevent
-                                Venv(
-                                    env={
-                                        "DD_PROFILE_TEST_GEVENT": "1",
-                                    },
-                                    pkgs={
-                                        "gunicorn[gevent]": latest,
-                                    },
-                                    venvs=[
-                                        Venv(
-                                            pkgs={"gevent": ["==22.10.2", latest]},
-                                        ),
-                                    ],
+                                    pkgs={"gevent": ["==22.10.2", latest]},
                                 ),
                             ],
                         ),
