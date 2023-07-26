@@ -12,7 +12,7 @@ consul_image: &consul_image consul:1.6.0@sha256:daa6203532fc30d81bf6c5593f79a2c7
 moto_image: &moto_image datadog/docker-library:moto_1_0_1@sha256:58c15f03141073629f4ff2a78910b812205324579c76f8bcac87e8e89af2e673
 mysql_image: &mysql_image mysql:5.7@sha256:03b6dcedf5a2754da00e119e2cc6094ed3c884ad36b67bb25fe67be4b4f9bdb1
 postgres_image: &postgres_image postgres:12-alpine@sha256:c6704f41eb84be53d5977cb821bf0e5e876064b55eafef1e260c2574de40ad9a
-mongo_image: &mongo_image mongo:3.6@sha256:f9b01e368fd95a783a68471930a15c2494d525318ff65a1b408ff3e6bc83e3d4
+mongo_image: &mongo_image mongo:3.6@sha256:19c11a8f1064fd2bb713ef1270f79a742a184cd57d9bb922efdd2a8eca514af8
 httpbin_image: &httpbin_image kennethreitz/httpbin@sha256:2c7abc4803080c22928265744410173b6fea3b898872c01c5fd0f0f9df4a59fb
 vertica_image: &vertica_image sumitchawla/vertica:latest
 rabbitmq_image: &rabbitmq_image rabbitmq:3.7-alpine
