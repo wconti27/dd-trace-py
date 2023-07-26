@@ -120,6 +120,7 @@ def override_global_config(values):
         "_user_model_login_field",
         "_user_model_email_field",
         "_user_model_name_field",
+        "_remote_config_enabled",
     ]
 
     # Grab the current values of all keys

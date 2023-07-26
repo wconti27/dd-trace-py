@@ -79,6 +79,8 @@ def test_app_started_event(telemetry_writer, test_agent_session, mock_time):
             {"name": "DD_INSTRUMENTATION_TELEMETRY_ENABLED", "origin": "unknown", "value": True},
             {"name": "DD_LOGS_INJECTION", "origin": "unknown", "value": False},
             {"name": "DD_PROFILING_ENABLED", "origin": "unknown", "value": False},
+            {"name": "DD_REMOTE_CONFIGURATION_ENABLED", "origin": "unknown", "value": False},
+            {"name": "DD_REMOTE_CONFIG_POLL_INTERVAL_SECONDS", "origin": "unknown", "value": 5},
             {"name": "DD_RUNTIME_METRICS_ENABLED", "origin": "unknown", "value": False},
             {"name": "DD_TRACE_128_BIT_TRACEID_GENERATION_ENABLED", "origin": "unknown", "value": False},
             {"name": "DD_TRACE_128_BIT_TRACEID_LOGGING_ENABLED", "origin": "unknown", "value": False},
@@ -154,6 +156,8 @@ telemetry_writer.disable()
     env["DD_TRACE_OTEL_ENABLED"] = "True"
     env["DD_TRACE_PROPAGATION_STYLE_EXTRACT"] = "tracecontext"
     env["DD_TRACE_PROPAGATION_STYLE_INJECT"] = "tracecontext"
+    env["DD_REMOTE_CONFIGURATION_ENABLED"] = "True"
+    env["DD_REMOTE_CONFIG_POLL_INTERVAL_SECONDS"] = "1"
 
     if PY2:
         # Prevents gevent importerror when profiling is enabled
@@ -175,6 +179,8 @@ telemetry_writer.disable()
         {"name": "DD_INSTRUMENTATION_TELEMETRY_ENABLED", "origin": "unknown", "value": True},
         {"name": "DD_LOGS_INJECTION", "origin": "unknown", "value": True},
         {"name": "DD_PROFILING_ENABLED", "origin": "unknown", "value": True},
+        {"name": "DD_REMOTE_CONFIGURATION_ENABLED", "origin": "unknown", "value": True},
+        {"name": "DD_REMOTE_CONFIG_POLL_INTERVAL_SECONDS", "origin": "unknown", "value": 1.0},
         {"name": "DD_RUNTIME_METRICS_ENABLED", "origin": "unknown", "value": True},
         {"name": "DD_TRACE_128_BIT_TRACEID_GENERATION_ENABLED", "origin": "unknown", "value": True},
         {"name": "DD_TRACE_128_BIT_TRACEID_LOGGING_ENABLED", "origin": "unknown", "value": True},

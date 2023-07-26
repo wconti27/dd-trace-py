@@ -34,6 +34,8 @@ from .constants import TELEMETRY_128_BIT_TRACEID_GENERATION_ENABLED
 from .constants import TELEMETRY_128_BIT_TRACEID_LOGGING_ENABLED
 from .constants import TELEMETRY_ANALYTICS_ENABLED
 from .constants import TELEMETRY_ASM_ENABLED
+from .constants import TELEMETRY_REMOTE_CONFIGURATION_ENABLED
+from .constants import TELEMETRY_REMOTE_CONFIGURATION_INTERVAL
 from .constants import TELEMETRY_CALL_BASIC_CONFIG
 from .constants import TELEMETRY_CLIENT_IP_ENABLED
 from .constants import TELEMETRY_DSM_ENABLED
@@ -310,6 +312,8 @@ class TelemetryWriter(PeriodicService):
                 (TELEMETRY_OTEL_ENABLED, config._otel_enabled, "unknown"),
                 (TELEMETRY_TRACE_HEALTH_METRICS_ENABLED, config.health_metrics_enabled, "unknown"),
                 (TELEMETRY_RUNTIMEMETRICS_ENABLED, config._runtime_metrics_enabled, "unknown"),
+                (TELEMETRY_REMOTE_CONFIGURATION_ENABLED, config._remote_config_enabled, "unknown"), 
+                (TELEMETRY_REMOTE_CONFIGURATION_INTERVAL, config._remote_config_poll_interval, "unknown"),
             ]
         )
 
