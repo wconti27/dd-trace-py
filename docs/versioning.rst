@@ -41,6 +41,7 @@ Support levels
        .. _versioning_support_maintenance:
    * - Maintenance
      - Does not receive new features. Receives only those bug fixes and security fixes considered "critical". Fixes are backported to the most recent minor release.
+
        .. _versioning_support_eol:
    * - End-of-Life (EOL)
      - No support.
