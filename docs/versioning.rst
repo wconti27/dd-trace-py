@@ -14,10 +14,9 @@ Release support
      - :ref:`Support level<versioning_support_levels>`
      - Minimum Datadog Agent
    * - ``<1``
-     - :ref:`EOL<versioning_support_eol>`
-     -
+     - :ref:`End of Life<versioning_support_eol>`
    * - ``>=1.0,<2``
-     - :ref:`Maintenance<versioning_support_maintenace>`
+     - :ref:`Maintenance<versioning_support_maintenance>`
      - 7.28
    * - ``>=2.0,<3``
      - :ref:`General Availability<versioning_support_ga>`
@@ -38,11 +37,11 @@ Support levels
    * - General Availability (GA)
      - Receives new features, bug fixes, and security fixes. Fixes are backported to the three most recent minor releases.
 
-       .. _versioning_support_maintenace:
+       .. _versioning_support_maintenance:
    * - Maintenance
      - Does not receive new features. Receives only those bug fixes and security fixes considered "critical". Fixes are backported to the most recent minor release.
        .. _versioning_support_eol:
-   * - End-of-life
+   * - End-of-Life (EOL)
      - No support.
 
 .. _versioning_release:
