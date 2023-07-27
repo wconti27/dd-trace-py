@@ -9,6 +9,7 @@ from ddtrace.ext import SpanKind
 from ddtrace.ext import SpanTypes
 from ddtrace.ext import kafka as kafkax
 from ddtrace.internal.compat import ensure_text
+from ddtrace.internal import core
 from ddtrace.internal.constants import COMPONENT
 from ddtrace.internal.constants import MESSAGING_SYSTEM
 from ddtrace.internal.datastreams.processor import PROPAGATION_KEY
@@ -106,6 +107,12 @@ def traced_produce(func, instance, args, kwargs):
         pathway = pin.tracer.data_streams_processor.set_checkpoint(["direction:out", "topic:" + topic, "type:kafka"])
         headers[PROPAGATION_KEY] = pathway.encode()
         kwargs["headers"] = headers
+
+    import pdb
+    pdb.set_trace()
+    with core.context_with_data('kafka.produce', test='baz', bob='foo'):
+        core.set_item("baz", "baaaz")
+        core.dispatch('span.create', ['argtest'])
 
     with pin.tracer.trace(
         schematize_messaging_operation(kafkax.PRODUCE, provider="kafka", direction=SpanDirection.OUTBOUND),
