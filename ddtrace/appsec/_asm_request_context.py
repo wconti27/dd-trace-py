@@ -7,6 +7,7 @@ from ddtrace.appsec import handlers
 from ddtrace.appsec._constants import SPAN_DATA_NAMES
 from ddtrace.appsec._constants import WAF_CONTEXT_NAMES
 from ddtrace.appsec.iast._util import _is_iast_enabled
+from ddtrace.contrib import trace_utils
 from ddtrace.internal import core
 from ddtrace.internal.compat import parse
 from ddtrace.internal.constants import REQUEST_PATH_PARAMS
@@ -428,9 +429,72 @@ def _on_block_decided(callback):
     set_value(_CALLBACKS, "flask_block", callback)
 
 
+def _on_get_response(request, get_resolver, blocked_response, utils, span):
+    if config._appsec_enabled:
+        # [IP Blocking]
+        if core.get_item(WAF_CONTEXT_NAMES.BLOCKED, span=span):
+            response = blocked_response()
+            return response
+
+        # set context information for [Suspicious Request Blocking]
+        query = request.META.get("QUERY_STRING", "")
+        uri = utils.get_request_uri(request)
+        if uri is not None and query:
+            uri += "?" + query
+        resolver = get_resolver(getattr(request, "urlconf", None))
+        if resolver:
+            try:
+                path = resolver.resolve(request.path_info).kwargs
+                log.debug("resolver.pattern %s", path)
+            except Exception:
+                path = None
+        parsed_query = request.GET
+        body = utils._extract_body(request)
+        trace_utils.set_http_meta(
+            span,
+            config.django,
+            method=request.method,
+            query=query,
+            raw_uri=uri,
+            request_path_params=path,
+            parsed_query=parsed_query,
+            request_body=body,
+            request_cookies=request.COOKIES,
+        )
+        log.debug("Django WAF call for Suspicious Request Blocking on request")
+        call_waf_callback()
+        if core.get_item(WAF_CONTEXT_NAMES.BLOCKED, span=span):
+            response = blocked_response()
+            return response
+
+
+def _on_get_response_post(blocked_response, span):
+    if config._appsec_enabled:
+        # [Blocking by client code]
+        if core.get_item(WAF_CONTEXT_NAMES.BLOCKED, span=span):
+            response = blocked_response()
+            return response
+
+
+def _on_get_response_finally(blocked_response, span):
+    if config._appsec_enbled and config._api_security_enabled:
+        trace_utils.set_http_meta(span, config.django, route=span.get_tag("http.route"))
+    # if not blocked yet, try blocking rules on response
+    if config._appsec_enabled and not core.get_item(WAF_CONTEXT_NAMES.BLOCKED, span=span):
+        log.debug("Django WAF call for Suspicious Request Blocking on response")
+        call_waf_callback()
+        # [Suspicious Request Blocking on response]
+        if core.get_item(WAF_CONTEXT_NAMES.BLOCKED, span=span):
+            response = blocked_response()
+            return response
+
+
 def listen_context_handlers():
     core.on("flask.finalize_request.post", _on_post_finalizerequest)
     core.on("flask.wrapped_view", _on_wrapped_view)
     core.on("flask.traced_request.pre", _on_pre_tracedrequest)
     core.on("wsgi.block_decided", _on_block_decided)
     core.on("flask.start_response", _on_start_response)
+    core.on("django.get_response.pre", _on_get_response)
+    core.on("django.get_response.post", _on_get_response_post)
+    core.on("django.get_response.finally", _on_get_response_finally)

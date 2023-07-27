@@ -503,44 +503,22 @@ def traced_get_response(django, pin, func, instance, args, kwargs):
                 return response
 
             try:
-                if config._appsec_enabled:
-                    # [IP Blocking]
-                    if core.get_item(WAF_CONTEXT_NAMES.BLOCKED, span=span):
-                        response = blocked_response()
-                        return response
-
-                    # set context information for [Suspicious Request Blocking]
-                    query = request.META.get("QUERY_STRING", "")
-                    uri = utils.get_request_uri(request)
-                    if uri is not None and query:
-                        uri += "?" + query
-                    resolver = get_resolver(getattr(request, "urlconf", None))
-                    if resolver:
-                        try:
-                            path = resolver.resolve(request.path_info).kwargs
-                            log.debug("resolver.pattern %s", path)
-                        except Exception:
-                            path = None
-                    parsed_query = request.GET
-                    body = utils._extract_body(request)
-                    trace_utils.set_http_meta(
-                        span,
-                        config.django,
-                        method=request.method,
-                        query=query,
-                        raw_uri=uri,
-                        request_path_params=path,
-                        parsed_query=parsed_query,
-                        request_body=body,
-                        request_cookies=request.COOKIES,
-                    )
-                    log.debug("Django WAF call for Suspicious Request Blocking on request")
-                    _asm_request_context.call_waf_callback()
-                    # [Suspicious Request Blocking on request]
-                    if core.get_item(WAF_CONTEXT_NAMES.BLOCKED, span=span):
-                        response = blocked_response()
-                        return response
+                results, _ = core.dispatch(
+                    "django.get_response.pre",
+                    request,
+                    get_resolver,
+                    blocked_response,
+                    utils,
+                    span
+                )
+                if results and results[0]:
+                    return results[0]
                 response = func(*args, **kwargs)
+                """
+                results, _ = core.dispatch("django.get_response.post", blocked_response, span)
+                if results and results[0]:
+                    return results[0]
+                """
                 if config._appsec_enabled:
                     # [Blocking by client code]
                     if core.get_item(WAF_CONTEXT_NAMES.BLOCKED, span=span):
@@ -550,16 +528,9 @@ def traced_get_response(django, pin, func, instance, args, kwargs):
             finally:
                 # DEV: Always set these tags, this is where `span.resource` is set
                 utils._after_request_tags(pin, span, request, response)
-                if config._appsec_enbled and config._api_security_enabled:
-                    trace_utils.set_http_meta(span, config.django, route=span.get_tag("http.route"))
-                # if not blocked yet, try blocking rules on response
-                if config._appsec_enabled and not core.get_item(WAF_CONTEXT_NAMES.BLOCKED, span=span):
-                    log.debug("Django WAF call for Suspicious Request Blocking on response")
-                    _asm_request_context.call_waf_callback()
-                    # [Suspicious Request Blocking on response]
-                    if core.get_item(WAF_CONTEXT_NAMES.BLOCKED, span=span):
-                        response = blocked_response()
-                        return response
+                results, _ = core.dispatch("django.get_response.finally", blocked_response, span)
+                if results and results[0]:
+                    return results[0]
 
 
 @trace_utils.with_traced_module
