@@ -2,6 +2,7 @@ from ddtrace.internal import core
 from ddtrace.internal.logger import get_logger
 from ddtrace.internal._rand import rand64bits as _rand64bits
 from ddtrace.internal._rand import rand128bits as _rand128bits
+from ddtrace.settings import config
 
 from ddtrace.internal.utils import get_argument_value
 from ddtrace.internal.utils import ArgumentError
@@ -34,11 +35,14 @@ def kafka_message_producer_span_info(func, instance, args, kwargs, event_uuid, e
     except ArgumentError:
         value = None
     message_key = kwargs.get("key", "")
+    partition = kwargs.get("partition", -1)
 
     core.set_item("value", value)
     core.set_item("host_list", host_list)
     core.set_item("topic", topic)
     core.set_item("message_key", message_key)
+    core.set_item("partition", partition)
+    core.set_item("rate", config.kafka.get_analytics_sample_rate)
 
     core.dispatch("kafka.produce.start.span", [event_uuid, event_time])
     
@@ -47,7 +51,7 @@ _SPANS = dict()
 
 def kafka_producer_start(identifier, timestamp):
     partial_span = {
-        "name": "kafka.produce",
+        "name": "kafka.produce",  # need to schematize?
         "service": "kafka",    # composite, should calculate.  Also need once?
         "resource": "kafka.produce",
         "trace_id": 0, # TODO
@@ -62,6 +66,7 @@ def kafka_producer_start(identifier, timestamp):
             "kafka.tombstone": (core.get_item("value") is not None),
             "kafka.topic": core.get_item("topic"),
             "language": "python",
+            "ANALYTICS_SAMPLE_RATE_KEY": None, # TODO
             "messaging.kafka.bootstrap.servers": core.get_item("bootstrap_servers"),
             "messaging.system": "kafka",
             "runtime-id": "TODO", # TODO
@@ -69,6 +74,8 @@ def kafka_producer_start(identifier, timestamp):
         },
         "metrics": {
             # TODO
+            "_dd.measured": 1, # TODO - and I feel like this is a metrics decision?
+            "kafka.partition": core.get_item("partition")
         },
         "duration": None, # Finished later
         "start": timestamp 

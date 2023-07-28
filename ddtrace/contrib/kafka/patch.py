@@ -100,8 +100,6 @@ def traced_produce(func, instance, args, kwargs):
     pdb.set_trace()
     core.dispatch("kafka.produce.start", [func, instance, args, kwargs, event_uuid, event_time])
 
-    message_key = kwargs.get("key", "")
-    partition = kwargs.get("partition", -1)
     if config._data_streams_enabled:
         # inject data streams context
         headers = kwargs.get("headers", {})
@@ -115,19 +113,6 @@ def traced_produce(func, instance, args, kwargs):
         service=trace_utils.ext_service(pin, config.kafka),
         span_type=SpanTypes.WORKER,
     ) as span:
-        span.set_tag_str(MESSAGING_SYSTEM, kafkax.SERVICE)
-        span.set_tag_str(COMPONENT, config.kafka.integration_name)
-        span.set_tag_str(SPAN_KIND, SpanKind.PRODUCER)
-        span.set_tag_str(kafkax.TOPIC, topic)
-        span.set_tag_str(kafkax.MESSAGE_KEY, ensure_text(message_key))
-        span.set_tag(kafkax.PARTITION, partition)
-        span.set_tag_str(kafkax.TOMBSTONE, str(value is None))
-        span.set_tag(SPAN_MEASURED_KEY)
-        if instance._dd_bootstrap_servers is not None:
-            span.set_tag_str(kafkax.HOST_LIST, instance._dd_bootstrap_servers)
-        rate = config.kafka.get_analytics_sample_rate()
-        if rate is not None:
-            span.set_tag(ANALYTICS_SAMPLE_RATE_KEY, rate)
         result = func(*args, **kwargs)
         import pdb; pdb.set_trace()
         finish_time = time_ns()

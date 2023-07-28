@@ -17,7 +17,9 @@ from ddtrace.internal.sampling import get_span_sampling_rules
 from ddtrace.settings.peer_service import PeerServiceConfig
 from ddtrace.vendor import debtcollector
 from ddtrace import traces 
+from ddtrace import data_stream_monitoring
 traces.initialize()
+data_stream_monitoring.initialize()
 
 from . import _hooks
 from ._monkey import patch
