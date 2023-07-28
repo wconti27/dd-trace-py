@@ -16,8 +16,6 @@ from ddtrace.internal.datastreams.processor import PROPAGATION_KEY
 from ddtrace.internal.schema import schematize_messaging_operation
 from ddtrace.internal.schema import schematize_service_name
 from ddtrace.internal.schema.span_attribute_schema import SpanDirection
-from ddtrace.internal.utils import ArgumentError
-from ddtrace.internal.utils import get_argument_value
 from ddtrace.pin import Pin
 
 
@@ -94,11 +92,14 @@ def traced_produce(func, instance, args, kwargs):
     if not pin or not pin.enabled():
         return func(*args, **kwargs)
 
-    topic = get_argument_value(args, kwargs, 0, "topic") or ""
-    try:
-        value = get_argument_value(args, kwargs, 1, "value")
-    except ArgumentError:
-        value = None
+    import uuid
+    from ddtrace.internal.compat import time_ns
+    event_uuid = str(uuid.uuid4())
+    event_time = time_ns()
+    import pdb
+    pdb.set_trace()
+    core.dispatch("kafka.produce.start", [func, instance, args, kwargs, event_uuid, event_time])
+
     message_key = kwargs.get("key", "")
     partition = kwargs.get("partition", -1)
     if config._data_streams_enabled:
@@ -108,11 +109,6 @@ def traced_produce(func, instance, args, kwargs):
         headers[PROPAGATION_KEY] = pathway.encode()
         kwargs["headers"] = headers
 
-    import pdb
-    pdb.set_trace()
-    with core.context_with_data('kafka.produce', test='baz', bob='foo'):
-        core.set_item("baz", "baaaz")
-        core.dispatch('span.create', ['argtest'])
 
     with pin.tracer.trace(
         schematize_messaging_operation(kafkax.PRODUCE, provider="kafka", direction=SpanDirection.OUTBOUND),
@@ -132,7 +128,11 @@ def traced_produce(func, instance, args, kwargs):
         rate = config.kafka.get_analytics_sample_rate()
         if rate is not None:
             span.set_tag(ANALYTICS_SAMPLE_RATE_KEY, rate)
-        return func(*args, **kwargs)
+        result = func(*args, **kwargs)
+        import pdb; pdb.set_trace()
+        finish_time = time_ns()
+        core.dispatch("kafka.produce.finish", [event_uuid, finish_time])
+        return result
 
 
 def traced_poll(func, instance, args, kwargs):
