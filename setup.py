@@ -347,12 +347,12 @@ class CMakeBuild(build_ext):
                     build_args += ["-j{}".format(self.parallel)]
                 else:
                     # Determine the parallelism from the number of schedulable CPUs
-                    print("[WARNING] unqualified -j in %s" % ext.name)
                     num_cpus = 1
                     try:
                         num_cpus = len(os.sched_getaffinity(0))
                     except Exception:
                         pass
+                    print("[WARNING] unqualified -j in %s, using %d CPUs" % (ext.name, num_cpus))
                     build_args += ["-j%d" % num_cpus]
             try:
                 cmake_cmd_with_args = [cmake_command] + cmake_args
