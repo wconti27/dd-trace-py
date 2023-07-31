@@ -346,8 +346,13 @@ class CMakeBuild(build_ext):
                 if hasattr(self, "parallel") and self.parallel:
                     build_args += ["-j{}".format(self.parallel)]
                 else:
-                    # Let CMake determine the parallelism to use
-                    build_args += ["-j"]
+                    # Determine the parallelism from the number of schedulable CPUs
+                    num_cpus = 1
+                    try:
+                        num_cpus = len(os.sched_getaffinity(0))
+                    except Exception:
+                        pass
+                    build_args += ["-j%d" % num_cpus]
             try:
                 cmake_cmd_with_args = [cmake_command] + cmake_args
                 subprocess.run(cmake_cmd_with_args, cwd=tmp_iast_path, check=True)
