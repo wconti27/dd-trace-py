@@ -2,7 +2,7 @@ from ddtrace.internal import core
 from ddtrace.internal.logger import get_logger
 from ddtrace.internal._rand import rand64bits as _rand64bits
 from ddtrace.internal._rand import rand128bits as _rand128bits
-from ddtrace.settings import config
+from ddtrace import config
 
 from ddtrace.internal.utils import get_argument_value
 from ddtrace.internal.utils import ArgumentError

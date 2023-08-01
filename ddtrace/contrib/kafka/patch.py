@@ -100,14 +100,6 @@ def traced_produce(func, instance, args, kwargs):
     pdb.set_trace()
     core.dispatch("kafka.produce.start", [func, instance, args, kwargs, event_uuid, event_time])
 
-    if config._data_streams_enabled:
-        # inject data streams context
-        headers = kwargs.get("headers", {})
-        pathway = pin.tracer.data_streams_processor.set_checkpoint(["direction:out", "topic:" + topic, "type:kafka"])
-        headers[PROPAGATION_KEY] = pathway.encode()
-        kwargs["headers"] = headers
-
-
     with pin.tracer.trace(
         schematize_messaging_operation(kafkax.PRODUCE, provider="kafka", direction=SpanDirection.OUTBOUND),
         service=trace_utils.ext_service(pin, config.kafka),
