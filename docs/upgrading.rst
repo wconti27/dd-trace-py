@@ -41,7 +41,6 @@ Use the following patterns to identify the deprecated environment variables in a
 
     git grep -e "DATADOG_[A-Z_]*" \
       -e "DATADOG_SERVICE_NAME" \
-      -e "DD_CALL_BASIC_CONFIG" \
       -e "DD_LOGGING_RATE_LIMIT" \
       -e "DD_SERVICE_NAME" \
       -e "DD_TRACER_PARTIAL_FLUSH_ENABLED" \
