@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    tracing: Adds support for the builtin multiprocessing library by enabling module unloading by default.
+    With this change the ddtrace library will save copies of dependency modules for internal use by ``ddtrace`` that 
+    will be unaffected by future imports of and changes to those modules by application code.
+    This feature can be disabled by setting ``DD_UNLOAD_MODULES_FROM_SITECUSTOMIZE`` configuration to False.
