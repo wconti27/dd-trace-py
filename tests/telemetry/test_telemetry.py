@@ -38,8 +38,8 @@ def test_telemetry_enabled_on_first_tracer_flush(test_agent_session, ddtrace_run
     # No trace and No Telemetry
     assert len(test_agent_session.get_events()) == 0
 
-    # Submit a trace to the agent in a subprocess
-    code = 'from ddtrace import tracer; span = tracer.trace("test-telemetry"); span.finish()'
+    # Submit a trace to the agent in a subprocess and imports flask to generate an integrations changed event
+    code = 'import flask; from ddtrace import tracer; span = tracer.trace("test-telemetry"); span.finish()'
     _, stderr, status, _ = ddtrace_run_python_code_in_subprocess(code)
     assert status == 0, stderr
     assert stderr == b""
