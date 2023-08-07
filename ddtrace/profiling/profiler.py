@@ -129,6 +129,8 @@ class _ProfilerInstance(service.Service):
     )
     _export_libdd_enabled = attr.ib(type=bool, default=config.export.libdd_enabled)
     _export_py_enabled = attr.ib(type=bool, default=config.export.py_enabled)
+    _stack_profiler_enabled = attr.ib(type=bool, default=config.stack.enabled)
+    _lock_profiler_enabled = attr.ib(type=bool, default=config.lock.enabled)
 
     ENDPOINT_TEMPLATE = "https://intake.profile.{}"
 
@@ -218,14 +220,25 @@ class _ProfilerInstance(service.Service):
             default_max_events=config.max_events,
         )
 
-        self._collectors = [
-            stack.StackCollector(
-                r,
-                tracer=self.tracer,
-                endpoint_collection_enabled=self.endpoint_collection_enabled,
-            ),  # type: ignore[call-arg]
-            threading.ThreadingLockCollector(r, tracer=self.tracer),
-        ]
+        self._collectors = []
+        if self._stack_profiler_enabled:
+            self._collectors.append(
+                stack.StackCollector(
+                    r,
+                    tracer=self.tracer,
+                    endpoint_collection_enabled=self.endpoint_collection_enabled,
+                ),  # type: ignore[call-arg]
+            )
+        else:
+            LOG.warning("Disabling stack profiling")
+
+
+        if self._lock_profiler_enabled:
+            self._collectors.append(
+                threading.ThreadingLockCollector(r, tracer=self.tracer),
+            )
+        else:
+            LOG.warning("Disabling lock profiling")
 
         if _asyncio.is_asyncio_available():
 

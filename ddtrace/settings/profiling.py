@@ -193,6 +193,28 @@ class ProfilingConfig(En):
         )
         sample_size = En.d(int, _derive_default_heap_sample_size)
 
+    class Stack(En):
+        __item__ = __prefix__ = "stack"
+
+        enabled = En.v(
+            bool,
+            "enabled",
+            default=True,
+            help_type="Boolean",
+            help="Whether to enable the stack (cpu, wall, exception) profiler",
+        )
+
+    class Lock(En):
+        __item__ = __prefix__ = "lock"
+
+        enabled = En.v(
+            bool,
+            "enabled",
+            default=True,
+            help_type="Boolean",
+            help="Whether to enable the lock profiler",
+        )
+
     class Export(En):
         __item__ = __prefix__ = "export"
 
