@@ -89,6 +89,7 @@ PATCH_MODULES = {
     "openai": True,
     "langchain": True,
     "subprocess": True,
+    "launchdarkly": True,
 }
 
 
@@ -128,6 +129,7 @@ _MODULES_FOR_CONTRIB = {
     "aws_lambda": ("datadog_lambda",),
     "httplib": ("httplib" if PY2 else "http.client",),
     "kafka": ("confluent_kafka",),
+    "launchdarkly": ("ldclient",),
 }
 
 
