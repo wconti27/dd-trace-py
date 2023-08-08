@@ -184,6 +184,10 @@ commands:
           name: Get APM Test Agent Trace Check Results
           when: always
           command: bash ./scripts/get-test-agent-results.sh
+      - run:
+          name: Upload & Update APM Integration Documents
+          when: always
+          command: bash ./scripts/update-integration-docs.sh
 
 executors:
   cimg_base:
