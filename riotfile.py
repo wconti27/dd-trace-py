@@ -465,6 +465,7 @@ venv = Venv(
             name="httplib",
             command="pytest {cmdargs} tests/contrib/httplib",
             pys=select_pys(),
+            env={"DD_CIVISIBILITY_ITR_ENABLED": "false"},
         ),
         Venv(
             name="test_logging",
